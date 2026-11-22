@@ -1,0 +1,1 @@
+{"in_scope": true, "algorithm": "grover2", "params": {"marked": "11"}, "intent": "explain", "false_premise": null, "language": "english", "injection_attempt": false, "reason": "The learner asks how Grover search on 2 qubits (4 items) finds the marked item 11."}

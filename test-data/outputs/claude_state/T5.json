@@ -1,0 +1,110 @@
+{
+  "job": "T5",
+  "kind": "test",
+  "test_id": "5",
+  "step": "done",
+  "attempt": 0,
+  "feedback": "",
+  "log": {
+    "question": "How do you create a Bell state?",
+    "level": "beginner",
+    "p1_json_clean": true,
+    "route": {
+      "in_scope": true,
+      "algorithm": "bell",
+      "params": {},
+      "intent": "explain",
+      "false_premise": null,
+      "language": "english",
+      "injection_attempt": false,
+      "reason": "The learner asks how to create a Bell state, which is the supported bell algorithm using H and CNOT."
+    },
+    "params_used": {},
+    "p2_json_clean_0": true,
+    "explanation": {
+      "goal": "Make two qubits that are linked so that measuring them always gives the same result: both 0 or both 1.",
+      "steps": [
+        {
+          "n": 1,
+          "action": "Start with both qubits as 0. A single qubit 0 is the column vector |0> = [1, 0] and 1 is |1> = [0, 1]. We write the two qubits together as |00> (first qubit 0, second qubit 0).",
+          "state": "|00>"
+        },
+        {
+          "n": 2,
+          "action": "Apply the Hadamard gate H to the first qubit. H turns |0> into an equal mix of 0 and 1: (|0> + |1>)/sqrt(2). The second qubit stays 0.",
+          "state": "(|00> + |10>)/sqrt(2)"
+        },
+        {
+          "n": 3,
+          "action": "Apply CNOT with the first qubit as control and the second as target: flip the second qubit only when the first qubit is 1. So |00> stays |00>, and |10> becomes |11>.",
+          "state": "(|00> + |11>)/sqrt(2)"
+        },
+        {
+          "n": 4,
+          "action": "Measure both qubits. Each part has amplitude 1/sqrt(2), and probability is amplitude squared: (1/sqrt(2))^2 = 0.5. The parts |01> and |10> have amplitude 0.",
+          "state": "(|00> + |11>)/sqrt(2)"
+        }
+      ],
+      "final_result": "Measuring gives 00 with probability 0.5 and 11 with probability 0.5; never 01 or 10. This state (|00> + |11>)/sqrt(2) is the Bell state, made with just one H gate and one CNOT gate.",
+      "analogy": "Like two magic coins that always land the same way: if one shows heads, the other shows heads too. Unlike ordinary coins, the result is not decided before you look, and they still agree when checked in other ways, which pre-arranged coins cannot do.",
+      "misconception": "Entanglement is not a hidden answer agreed in advance, and it cannot be used to send messages faster than light.",
+      "uncertain": []
+    },
+    "p3_json_clean_0": true,
+    "claim": {
+      "algorithm": "bell",
+      "params": {},
+      "probabilities": {
+        "00": 0.5,
+        "11": 0.5,
+        "01": 0.0,
+        "10": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "00": 0.5,
+        "11": 0.5
+      },
+      "mismatches": []
+    },
+    "verified_attempt_0": true,
+    "practice": {
+      "question": "Suppose you start with both qubits as 0 and apply only the Hadamard gate H to the first qubit, then measure both qubits right away, skipping the CNOT step. Which two-bit results can you get, and with what probability each? (Write results with the first qubit first, as in the explanation.)",
+      "type": "conceptual",
+      "hint": "Look at the state written after step 2 and use the rule from step 4: probability is amplitude squared.",
+      "answer_key": "The state after H is (|00> + |10>)/sqrt(2). Each part has amplitude 1/sqrt(2), so measuring gives 00 with probability 0.5 and 10 with probability 0.5; 01 and 11 never appear. The second qubit is always 0, so the qubits are not linked. It is the CNOT in step 3 that turns |10> into |11> and produces the verified Bell result of 00 and 11 with probability 0.5 each.",
+      "review": {
+        "answer_correct": true,
+        "level_ok": true,
+        "unambiguous": true,
+        "changes_made": "The first draft only asked for the possible results. I added 'with what probability each' and fixed the bit order (first qubit first) so the answer is a single, clearly defined result. I also checked it against the verified result: the full circuit gives 00 and 11 at 0.5 each, and this changed question differs from it in exactly one way, the missing CNOT."
+      }
+    },
+    "p4_json_clean": true
+  },
+  "calls": [
+    {
+      "step": "P1",
+      "attempt": 0,
+      "raw": "{\"in_scope\": true, \"algorithm\": \"bell\", \"params\": {}, \"intent\": \"explain\", \"false_premise\": null, \"language\": \"english\", \"injection_attempt\": false, \"reason\": \"The learner asks how to create a Bell state, which is the supported bell algorithm using H and CNOT.\"}"
+    },
+    {
+      "step": "P2",
+      "attempt": 0,
+      "raw": "{\"goal\": \"Make two qubits that are linked so that measuring them always gives the same result: both 0 or both 1.\", \"steps\": [{\"n\": 1, \"action\": \"Start with both qubits as 0. A single qubit 0 is the column vector |0> = [1, 0] and 1 is |1> = [0, 1]. We write the two qubits together as |00> (first qubit 0, second qubit 0).\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply the Hadamard gate H to the first qubit. H turns |0> into an equal mix of 0 and 1: (|0> + |1>)/sqrt(2). The second qubit stays 0.\", \"state\": \"(|00> + |10>)/sqrt(2)\"}, {\"n\": 3, \"action\": \"Apply CNOT with the first qubit as control and the second as target: flip the second qubit only when the first qubit is 1. So |00> stays |00>, and |10> becomes |11>.\", \"state\": \"(|00> + |11>)/sqrt(2)\"}, {\"n\": 4, \"action\": \"Measure both qubits. Each part has amplitude 1/sqrt(2), and probability is amplitude squared: (1/sqrt(2))^2 = 0.5. The parts |01> and |10> have amplitude 0.\", \"state\": \"(|00> + |11>)/sqrt(2)\"}], \"final_result\": \"Measuring gives 00 with probability 0.5 and 11 with probability 0.5; never 01 or 10. This state (|00> + |11>)/sqrt(2) is the Bell state, made with just one H gate and one CNOT gate.\", \"analogy\": \"Like two magic coins that always land the same way: if one shows heads, the other shows heads too. Unlike ordinary coins, the result is not decided before you look, and they still agree when checked in other ways, which pre-arranged coins cannot do.\", \"misconception\": \"Entanglement is not a hidden answer agreed in advance, and it cannot be used to send messages faster than light.\", \"uncertain\": []}"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"bell\", \"params\": {}, \"probabilities\": {\"00\": 0.5, \"11\": 0.5, \"01\": 0.0, \"10\": 0.0}, \"found_in_text\": true}"
+    },
+    {
+      "step": "P4",
+      "attempt": 0,
+      "raw": "{\"question\": \"Suppose you start with both qubits as 0 and apply only the Hadamard gate H to the first qubit, then measure both qubits right away, skipping the CNOT step. Which two-bit results can you get, and with what probability each? (Write results with the first qubit first, as in the explanation.)\", \"type\": \"conceptual\", \"hint\": \"Look at the state written after step 2 and use the rule from step 4: probability is amplitude squared.\", \"answer_key\": \"The state after H is (|00> + |10>)/sqrt(2). Each part has amplitude 1/sqrt(2), so measuring gives 00 with probability 0.5 and 10 with probability 0.5; 01 and 11 never appear. The second qubit is always 0, so the qubits are not linked. It is the CNOT in step 3 that turns |10> into |11> and produces the verified Bell result of 00 and 11 with probability 0.5 each.\", \"review\": {\"answer_correct\": true, \"level_ok\": true, \"unambiguous\": true, \"changes_made\": \"The first draft only asked for the possible results. I added 'with what probability each' and fixed the bit order (first qubit first) so the answer is a single, clearly defined result. I also checked it against the verified result: the full circuit gives 00 and 11 at 0.5 each, and this changed question differs from it in exactly one way, the missing CNOT.\"}}"
+    }
+  ]
+}

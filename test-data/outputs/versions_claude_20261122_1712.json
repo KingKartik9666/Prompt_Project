@@ -1,0 +1,391 @@
+{
+  "model": "claude-opus-5-5 (fresh Claude Code subagent per LLM call, default settings)",
+  "v1": {
+    "runs": [
+      {
+        "test_id": "1",
+        "rep": 0,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0,
+          "11": 1.0
+        },
+        "mismatches": [],
+        "words": 581,
+        "output": "Grover's algorithm on 4 items (2 qubits), searching for the marked item |11>\n\nSetup\nWith N = 4 items we need n = 2 qubits. The four basis states |00>, |01>, |10>, |11> stand for the four items. The marked item is |11>. The optimal number of Grover iterations is about (pi/4)*sqrt(N) = (pi/4)*2 ≈ 1.57, which rounds down to 1. For N = 4, a single iteration finds the marked item with certainty.\n\nStep 1: Start in |00>\nAmplitudes: |00> = 1, |01> = 0, |10> = 0, |11> = 0.\n\nStep 2: Create a uniform superposition (Hadamard on both qubits)\nH⊗H|00> = |s> = (1/2)(|00> + |01> + |10> + |11>)\nEach item now has amplitude 1/2, so a measurement at this point would give each item with probability (1/2)^2 = 1/4 (just random guessing).\n\nStep 3: Oracle (mark the target by flipping its phase)\nThe oracle applies U_f|x> = (-1)^f(x)|x>, where f(x) = 1 only for x = 11. For the target 11 this is just a controlled-Z (CZ) gate, which multiplies |11> by -1 and leaves the other states unchanged:\n(1/2)(|00> + |01> + |10> - |11>)\nThe probabilities have not changed yet (all still 1/4); only the sign of the marked amplitude is different. The diffusion step turns that sign difference into a difference in amplitude size.\n\nStep 4: Diffusion operator (inversion about the mean)\nThe diffuser is D = 2|s><s| - I. Its effect on each amplitude a is a -> 2*(mean) - a.\n- Mean of the amplitudes: (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4\n- Unmarked states: 2*(1/4) - 1/2 = 0\n- Marked state |11>: 2*(1/4) - (-1/2) = 1\nResulting state: |11>, i.e. amplitudes (0, 0, 0, 1).\n\nStep 5: Measure\nMeasuring gives 11 with probability 1^2 = 1 (100%) in an ideal, noise-free circuit.\n\nGeometric picture\nWrite |s> = sin(theta)|w> + cos(theta)|w_perp>, where |w> = |11> and |w_perp> is the equal superposition of the three unmarked states. Here sin(theta) = 1/sqrt(N) = 1/2, so theta = 30 degrees. Each Grover iteration (oracle followed by diffusion) is two reflections, which together rotate the state by 2*theta = 60 degrees toward |w>. After k iterations the angle from |w_perp> is (2k + 1)*theta. With k = 1 that is 3*30 = 90 degrees, so the state lands exactly on |11>. A second iteration would overshoot to 150 degrees and lower the success probability to sin^2(150°) = 1/4, which is why you stop after one iteration.\n\nCircuit (2 qubits)\n1. H on q0 and q1                      (superposition)\n2. CZ(q0, q1)                          (oracle for |11>)\n3. H on both, X on both                (start of diffuser)\n4. CZ(q0, q1)\n5. X on both, H on both                (end of diffuser)\n6. Measure both qubits -> 11\n\nSteps 3 to 5 implement I - 2|s><s|, which equals the diffuser D up to a global phase of -1. A global phase cannot be observed, so the result is the same.\n\nWhy this matters\nA classical search through 4 unsorted items needs on average 2.25 oracle queries if you check items one at a time (up to 3 queries to be certain, because the 4th can be inferred). Grover needs exactly 1 query here. In general Grover uses about (pi/4)*sqrt(N) queries instead of about N/2, a quadratic speed-up. N = 4 is a special case where the rotation lands exactly on the target. For most other N, the final success probability is high but slightly below 1.\n"
+      },
+      {
+        "test_id": "1",
+        "rep": 1,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0,
+          "11": 1.0
+        },
+        "mismatches": [],
+        "words": 621,
+        "output": "Grover's algorithm on 4 items (2 qubits), searching for the marked item |11>\n\nSetup\nWith N = 4 items we need n = 2 qubits, whose basis states |00>, |01>, |10>, |11> label the four items. The marked item is |11>. Classically you would need on average about 2-3 queries (worst case 3) to find it. Grover's algorithm finds it with certainty using a single oracle query, because for N = 4 one Grover iteration happens to rotate the state exactly onto the answer.\n\nStep 1: Initialize\nStart in |00>.\nAmplitudes: |00>: 1, |01>: 0, |10>: 0, |11>: 0\n\nStep 2: Create an equal superposition\nApply a Hadamard gate to each qubit (H ⊗ H):\n|s> = (1/2)(|00> + |01> + |10> + |11>)\nAmplitudes: 1/2, 1/2, 1/2, 1/2\nEach item has probability (1/2)^2 = 1/4, so measuring now would be no better than a random guess.\n\nStep 3: Apply the oracle (mark the answer)\nThe oracle flips the sign (phase) of the marked state only:\nO|x> = -|x> if x = 11, and |x> otherwise.\nFor |11> this is exactly a controlled-Z (CZ) gate, which multiplies |11> by -1 and leaves the other states unchanged.\nState after the oracle: (1/2)(|00> + |01> + |10> - |11>)\nAmplitudes: 1/2, 1/2, 1/2, -1/2\nThe probabilities are still all 1/4; the marking is hidden in the phase, so it cannot be seen by measuring yet.\n\nStep 4: Apply the diffusion operator (inversion about the mean)\nThe diffuser D = 2|s><s| - I reflects every amplitude about the average amplitude: new amplitude = 2 x (mean) - (old amplitude).\nMean of the amplitudes = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4\n- Unmarked states: 2(1/4) - 1/2 = 0\n- Marked state |11>: 2(1/4) - (-1/2) = 1\nState after diffusion: |11>\nAmplitudes: 0, 0, 0, 1\n\nStep 5: Measure\nMeasuring both qubits gives 11 with probability 1. The marked item is found after exactly one oracle call.\n\nCircuit for the diffuser (2 qubits)\nH on both qubits -> X on both qubits -> CZ -> X on both qubits -> H on both qubits.\n(This implements the reflection about |s>, up to an irrelevant global phase.)\nFull circuit: H H | CZ (oracle for 11) | H H, X X, CZ, X X, H H | measure.\n\nGeometric picture (why one iteration is enough)\nThink of the state as a vector in a 2-D plane spanned by the marked state |w> = |11> and the uniform superposition of the unmarked states |w'>. The starting state |s> makes an angle θ with |w'>, where sin θ = 1/sqrt(N) = 1/2, so θ = 30°.\n- The oracle reflects the state about |w'>.\n- The diffuser reflects it about |s>.\nTwo reflections together make a rotation by 2θ = 60° toward |w>. After k iterations the angle is (2k + 1)θ. For k = 1 this is 3 x 30° = 90°, which lands exactly on |w> = |11>. The success probability is sin^2((2k + 1)θ) = sin^2(90°) = 1.\n\nKey points\n- The oracle does not \"reveal\" the answer; it only flips its phase.\n- The diffuser turns that phase difference into an amplitude difference by inverting about the mean, so the marked amplitude grows while the others shrink (constructive vs destructive interference).\n- In general about (π/4)·sqrt(N) iterations are needed, which gives the quadratic speed-up over classical search. For N = 4 that is (π/4)·2 ≈ 1.57, which rounds to 1, and here one iteration is exact.\n- Doing more iterations than needed rotates past the answer: a second iteration here would give angle 5θ = 150° and success probability sin^2(150°) = 1/4, which is no better than guessing.\n"
+      },
+      {
+        "test_id": "3",
+        "rep": 0,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "11": 1.0,
+          "00": 0.0
+        },
+        "mismatches": [],
+        "words": 696,
+        "output": "Deutsch-Jozsa on 2 input bits: a worked walkthrough with a balanced function\n\n1. The problem\nYou are given a black-box function f: {0,1}^2 -> {0,1}. You are promised it is either\n- constant (outputs the same value on all 4 inputs), or\n- balanced (outputs 0 on exactly 2 inputs and 1 on the other 2).\nClassically, in the worst case you must query f on 3 of the 4 inputs to be sure (2^(n-1) + 1 queries for n bits). Deutsch-Jozsa decides with certainty using a single quantum query.\n\nFor the walkthrough, take the balanced function\nf(x1, x2) = x1 XOR x2\nTruth table: f(00) = 0, f(01) = 1, f(10) = 1, f(11) = 0. Two zeros, two ones, so it is balanced.\n\n2. The circuit\n- Two input qubits, one ancilla (output) qubit: 3 qubits total.\n- Oracle U_f acts as U_f |x>|y> = |x>|y XOR f(x)>.\n- Steps: prepare |00>|1>, apply H to all three qubits, apply U_f once, apply H to the two input qubits, measure the input qubits.\n\n3. Step-by-step state evolution\n\nStep 0: Initial state\n|psi0> = |00> |1>\n\nStep 1: Hadamard on every qubit\nH|0> = |+> = (|0> + |1>)/sqrt(2), H|1> = |-> = (|0> - |1>)/sqrt(2).\n|psi1> = (1/2)(|00> + |01> + |10> + |11>) ⊗ |->\nThe input register is now a uniform superposition over all 4 inputs.\n\nStep 2: Apply the oracle (phase kickback)\nBecause the ancilla is in |->, applying U_f gives\nU_f |x>|-> = (-1)^f(x) |x>|->\nThe ancilla is unchanged; the function value is \"kicked back\" as a sign on |x>. So\n|psi2> = (1/2) Σ_x (-1)^f(x) |x> ⊗ |->\n\nFor f = x1 XOR x2:\n- x = 00: f = 0, sign +\n- x = 01: f = 1, sign -\n- x = 10: f = 1, sign -\n- x = 11: f = 0, sign +\n|psi2> = (1/2)(|00> - |01> - |10> + |11>) ⊗ |->\n\nFrom here on we can ignore the ancilla. Notice the input register factors:\n(1/2)(|00> - |01> - |10> + |11>) = [(|0> - |1>)/sqrt(2)] ⊗ [(|0> - |1>)/sqrt(2)] = |-> ⊗ |->\n\nStep 3: Hadamard on the two input qubits\nH|-> = |1>, so\n|psi3> = |1> ⊗ |1> = |11>\n\nStep 4: Measure\nThe result is 11 with probability 1.\n\n4. Reading the result\nThe rule: if you measure 00, f is constant; if you measure anything other than 00, f is balanced.\nWe got 11, so f is balanced, after one query to the oracle.\n\n5. Why this always works\nAfter the final Hadamards, the amplitude of |00> is\namp(00) = (1/4) Σ_x (-1)^f(x)\n(In general it is (1/2^n) Σ_x (-1)^f(x).)\n- Constant f: all four signs are the same, so the sum is ±4 and amp(00) = ±1. You see 00 with certainty.\n- Balanced f: two +1 terms and two -1 terms cancel, so the sum is 0 and amp(00) = 0. You never see 00.\nFor our example: (1/4)(+1 - 1 - 1 + 1) = 0. This destructive interference on |00> is the whole trick.\n\n6. A second balanced example for comparison\nTake f(x1, x2) = x1 (outputs 0, 0, 1, 1 on 00, 01, 10, 11).\nAfter the oracle: (1/2)(|00> + |01> - |10> - |11>) = |-> ⊗ |+>.\nAfter H ⊗ H: |1> ⊗ |0> = |10>. Again not 00, so balanced.\nThere are C(4,2) = 6 balanced functions on 2 bits. Each one gives a nonzero output string (which string depends on f), but none of them can ever give 00.\n\n7. Key points to remember\n- The |-> ancilla turns the oracle into a phase oracle (phase kickback).\n- The first Hadamards query all inputs in superposition; the last Hadamards make the amplitudes interfere.\n- Only the 00 outcome matters for the decision: 00 means constant, anything else means balanced.\n- The speedup (1 query vs 2^(n-1) + 1) is against deterministic classical algorithms. A randomized classical algorithm can get the answer with high probability in a few queries, so the advantage is about certainty, and it relies on the promise that f is either constant or balanced.\n"
+      },
+      {
+        "test_id": "3",
+        "rep": 1,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "00": 0.0,
+          "11": 1.0
+        },
+        "mismatches": [],
+        "words": 738,
+        "output": "Deutsch-Jozsa on 2 input bits: a step-by-step walkthrough with a balanced function\n\n1. The problem\n\nYou are given a black-box function f: {0,1}^2 -> {0,1}. You are promised that f is either\n- constant (the same output for all 4 inputs), or\n- balanced (outputs 0 on exactly 2 inputs and 1 on the other 2).\n\nThe task is to decide which. Classically, in the worst case you have to query f 2^(n-1) + 1 = 3 times: if the first two answers agree, you still cannot tell. Deutsch-Jozsa decides with certainty using a single quantum query.\n\nFor the walkthrough, take the balanced function f(x1 x2) = x1 XOR x2:\n\n  x1 x2 | f\n  0  0  | 0\n  0  1  | 1\n  1  0  | 1\n  1  1  | 0\n\nTwo outputs are 0 and two are 1, so it is balanced.\n\n2. The oracle\n\nThe oracle is the unitary U_f |x>|y> = |x>|y XOR f(x)>, where |x> is the 2-qubit input register and |y> is a single ancilla qubit.\n\n3. Circuit\n\n  |0> --H--|      |--H-- measure\n  |0> --H--| U_f  |--H-- measure\n  |1> --H--|      |\n\n4. Step by step\n\nStep 0: Initial state\n  |psi0> = |00> |1>\n\nStep 1: Apply H to all three qubits\n  H|0> = (|0> + |1>)/sqrt(2) and H|1> = (|0> - |1>)/sqrt(2) = |->.\n  The input register becomes an equal superposition of all 4 inputs:\n  |psi1> = (1/2)(|00> + |01> + |10> + |11>) ⊗ |->\n\nStep 2: Query the oracle once (phase kickback)\n  Because the ancilla is in |->, applying U_f gives\n  U_f |x>|-> = (-1)^f(x) |x>|->.\n  The value of f is written into the phase, not into the ancilla. The ancilla stays |-> and can be ignored from here on.\n  |psi2> = (1/2) * sum_x (-1)^f(x) |x> ⊗ |->\n\n  For f = x1 XOR x2:\n  |psi2> = (1/2)( +|00> - |01> - |10> + |11> ) ⊗ |->\n\n  This input-register state factors as |-> ⊗ |->, which you can check by expanding\n  (|0> - |1>)/sqrt(2) ⊗ (|0> - |1>)/sqrt(2) = (1/2)(|00> - |01> - |10> + |11>).\n\nStep 3: Apply H to each input qubit again\n  H|-> = |1>, so\n  (H ⊗ H)(|-> ⊗ |->) = |1> ⊗ |1> = |11>.\n\n  The general formula, which works for any f, is\n  amplitude of |z> = (1/4) * sum_x (-1)^(f(x) + x·z)\n  The key case is z = 00:\n  amplitude of |00> = (1/4) * sum_x (-1)^f(x)\n  For our f this is (1/4)(1 - 1 - 1 + 1) = 0.\n\nStep 4: Measure the input register\n  The outcome is 11 with probability 1.\n\n5. Interpreting the result\n\nThe rule is:\n- If the measurement gives 00, f is constant.\n- If it gives anything else (01, 10 or 11), f is balanced.\n\nWhy it works: the amplitude of |00> is the average of (-1)^f(x) over all inputs.\n- If f is constant, every term has the same sign, so the amplitude is ±1. You get 00 with certainty.\n- If f is balanced, two terms are +1 and two are -1. They cancel exactly, so the amplitude is 0 and you never see 00.\n\nHere we measured 11, which is not 00, so f is balanced. That is correct, and it took one oracle call.\n\n6. A second balanced example for comparison\n\nTake f(x1 x2) = x1, with outputs 0, 0, 1, 1.\nAfter the oracle the input register is (1/2)(|00> + |01> - |10> - |11>) = |-> ⊗ |+>.\nApplying H ⊗ H gives |1> ⊗ |0> = |10>.\nThe result is not 00, so this f is balanced too.\n\nIn general, for a balanced function that is linear, f(x) = s·x (mod 2), the measurement returns exactly the string s. For other balanced functions the outcome can be spread over several nonzero strings, but it is never 00.\n\n7. Key takeaways\n\n- The Hadamards create a superposition, so one oracle call acts on all 4 inputs at once.\n- The |-> ancilla turns the function's output into a phase, (-1)^f(x).\n- The final Hadamards make those phases interfere. For a balanced f, the |00> component cancels completely.\n- The speedup is one query versus 3 classical queries in the worst case, and 1 versus 2^(n-1) + 1 for n bits. It is exact, with no error probability. A randomized classical algorithm can solve the problem with high probability in only a few queries, though, so the separation applies to deterministic algorithms.\n"
+      },
+      {
+        "test_id": "5",
+        "rep": 0,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "00": 0.5,
+          "11": 0.5,
+          "01": 0.0,
+          "10": 0.0
+        },
+        "mismatches": [],
+        "words": 419,
+        "output": "A Bell state is a maximally entangled state of two qubits. The most common one is\n\n|Phi+> = (|00> + |11>) / sqrt(2)\n\nYou can create it with just two gates: a Hadamard (H) followed by a CNOT.\n\nStep-by-step\n\n1. Start with both qubits in |0>:\n   |psi0> = |0>|0> = |00>\n\n2. Apply a Hadamard gate to the first qubit (the control). H maps |0> to (|0> + |1>)/sqrt(2), so:\n   |psi1> = (|0> + |1>)/sqrt(2) ⊗ |0> = (|00> + |10>) / sqrt(2)\n   The first qubit is now in an equal superposition, but the two qubits are still not entangled; the state can still be written as a product of two single-qubit states.\n\n3. Apply a CNOT gate with qubit 1 as control and qubit 2 as target. CNOT flips the target only when the control is |1>:\n   |00> -> |00>\n   |10> -> |11>\n   so\n   |psi2> = (|00> + |11>) / sqrt(2) = |Phi+>\n\nThis final state cannot be written as a product of two single-qubit states, which is what makes it entangled. If you measure either qubit, you get 0 or 1 with 50% probability each, but the two results always agree: measuring 0 on one qubit means the other is 0, and measuring 1 means the other is 1.\n\nCircuit diagram\n\nq0: |0> --[H]--●--\n               |\nq1: |0> -------⊕--\n\nGetting the other three Bell states\n\nThere are four Bell states in total. You get them by changing the starting input (or, equivalently, adding X and/or Z gates):\n\n- Input |00> -> |Phi+> = (|00> + |11>) / sqrt(2)\n- Input |01> -> |Psi+> = (|01> + |10>) / sqrt(2)\n- Input |10> -> |Phi-> = (|00> - |11>) / sqrt(2)\n- Input |11> -> |Psi-> = (|01> - |10>) / sqrt(2)\n\nIn general, the H + CNOT circuit acting on input |a b> produces\n(|0 b> + (-1)^a |1 (NOT b)>) / sqrt(2).\n\nExample in Qiskit\n\nfrom qiskit import QuantumCircuit\n\nqc = QuantumCircuit(2, 2)\nqc.h(0)        # put qubit 0 into superposition\nqc.cx(0, 1)    # entangle qubit 0 with qubit 1\nqc.measure([0, 1], [0, 1])\n\nRunning this on an ideal simulator gives roughly 50% \"00\" and 50% \"11\", and essentially never \"01\" or \"10\". On real hardware, noise will show a small number of \"01\" and \"10\" results.\n\nWhy it matters\n\nBell states are the basic resource for many quantum protocols, including quantum teleportation, superdense coding, entanglement-based quantum key distribution (such as E91), and tests of Bell inequalities that show quantum correlations cannot be explained by local hidden-variable theories.\n"
+      },
+      {
+        "test_id": "5",
+        "rep": 1,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "00": 0.5,
+          "11": 0.5,
+          "01": 0.0,
+          "10": 0.0
+        },
+        "mismatches": [],
+        "words": 401,
+        "output": "A Bell state is a maximally entangled state of two qubits. The most common one is\n\n|Φ+⟩ = (|00⟩ + |11⟩) / √2\n\nYou create it with a two-gate circuit: a Hadamard gate followed by a CNOT gate.\n\nStep-by-step\n\n1. Start with both qubits in |0⟩:\n   |ψ0⟩ = |00⟩\n\n2. Apply a Hadamard gate (H) to the first qubit (the control). H maps |0⟩ to (|0⟩ + |1⟩)/√2, so:\n   |ψ1⟩ = (H ⊗ I)|00⟩ = (|0⟩ + |1⟩)/√2 ⊗ |0⟩ = (|00⟩ + |10⟩)/√2\n   The first qubit is now in an equal superposition, but the two qubits are still independent (a product state).\n\n3. Apply a CNOT gate with qubit 1 as control and qubit 2 as target. CNOT flips the target only when the control is |1⟩:\n   |00⟩ -> |00⟩\n   |10⟩ -> |11⟩\n   So:\n   |ψ2⟩ = (|00⟩ + |11⟩)/√2 = |Φ+⟩\n\nCircuit diagram:\n\nq0: |0⟩ ──H──●──\n             │\nq1: |0⟩ ─────X──\n\nWhy this is entangled\n\nThe final state cannot be written as a product (a|0⟩ + b|1⟩) ⊗ (c|0⟩ + d|1⟩). If it could, you would need ac = 1/√2, bd = 1/√2 and ad = bc = 0, which is impossible. Physically, if you measure the two qubits in the computational basis you get 00 or 11, each with probability 1/2, and never 01 or 10. Each qubit alone looks completely random, but the outcomes are perfectly correlated.\n\nThe other three Bell states\n\nChanging the starting input of the same H + CNOT circuit gives the full Bell basis:\n\n- Input |00⟩ -> |Φ+⟩ = (|00⟩ + |11⟩)/√2\n- Input |01⟩ -> |Ψ+⟩ = (|01⟩ + |10⟩)/√2\n- Input |10⟩ -> |Φ−⟩ = (|00⟩ − |11⟩)/√2\n- Input |11⟩ -> |Ψ−⟩ = (|01⟩ − |10⟩)/√2\n\nEquivalently, you can make |Φ+⟩ and then apply X and/or Z to one qubit to reach the others (X gives Ψ+, Z gives Φ−, and both give Ψ− up to a global phase).\n\nExample in Qiskit\n\nfrom qiskit import QuantumCircuit\n\nqc = QuantumCircuit(2, 2)\nqc.h(0)        # superposition on qubit 0\nqc.cx(0, 1)    # entangle qubit 0 with qubit 1\nqc.measure([0, 1], [0, 1])\n\nRunning this many times should give roughly 50% \"00\" and 50% \"11\".\n\nReversing it\n\nRunning the circuit backwards (CNOT, then H on the first qubit) maps each Bell state back to a distinct computational basis state. This is called a Bell measurement, and it is used in quantum teleportation and superdense coding.\n"
+      },
+      {
+        "test_id": "7",
+        "rep": 0,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "11": 1.0,
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0
+        },
+        "mismatches": [],
+        "words": 584,
+        "output": "Not quite. Grover's algorithm gives a quadratic speedup, not an exponential one.\n\n- Classical search of an unstructured list of N items needs about N/2 oracle queries on average (N in the worst case).\n- Grover's algorithm needs about (pi/4) * sqrt(N) queries.\n\nSo for N = 1,000,000, a classical search needs on the order of 500,000 queries, while Grover needs about 785. That is a big gain, but it is O(sqrt(N)) versus O(N), which is polynomial (quadratic), not exponential. It has also been proven (Bennett, Bernstein, Brassard and Vazirani, 1997) that no quantum algorithm can do better than order sqrt(N) for unstructured search, so Grover is optimal and an exponential speedup for this problem is impossible. Exponential speedups are known only for problems with special structure, such as factoring (Shor's algorithm).\n\nHow it works for 4 items (N = 4)\n\nSetup: 4 items need 2 qubits, with basis states |00>, |01>, |10>, |11>. Suppose the marked item is |11>. The oracle is a black box that recognises the marked item.\n\nStep 1 - Uniform superposition.\nStart in |00> and apply a Hadamard gate to each qubit:\n  |s> = (1/2)(|00> + |01> + |10> + |11>)\nEvery amplitude is 1/2, so each item would be measured with probability 1/4.\n\nStep 2 - Oracle (phase flip).\nThe oracle multiplies the amplitude of the marked state by -1:\n  (1/2)(|00> + |01> + |10> - |11>)\nMeasurement probabilities are unchanged (still 1/4 each), but the marked state is now \"tagged\" by its sign.\n\nStep 3 - Diffusion operator (inversion about the mean).\nThe diffuser is D = 2|s><s| - I. Its effect on amplitudes is: new amplitude = 2 * (mean) - old amplitude.\n  Mean of the amplitudes = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4\n  Unmarked states: 2(1/4) - 1/2 = 0\n  Marked state:    2(1/4) - (-1/2) = 1\nResult: |11> with amplitude 1, all others 0.\n\nStep 4 - Measure.\nYou get |11> with probability 1 (100%).\n\nSo for N = 4, one Grover iteration (one oracle call plus one diffusion) finds the marked item with certainty. A classical algorithm needs 2.25 queries on average (and up to 3 in the worst case, since if the first 3 checks fail the 4th must be the answer).\n\nGeometric picture: think of a 2D plane spanned by the marked state and the uniform superposition of the unmarked states. The starting state makes an angle theta with the unmarked direction, where sin(theta) = 1/sqrt(N). Each Grover iteration (oracle reflection followed by diffusion reflection) rotates the state by 2*theta toward the marked state. For N = 4, sin(theta) = 1/2, so theta = 30 degrees; the start is at 30 degrees and one iteration rotates by 60 degrees to land at exactly 90 degrees, i.e. on the marked state. For general N you need about (pi/4) * sqrt(N) rotations, which is where the sqrt(N) scaling comes from. Doing too many iterations overshoots and the success probability drops again.\n\nCaveats worth remembering:\n- The speedup is in oracle queries; building the oracle for a real problem can itself be costly.\n- Loading a classical database into a quantum state (e.g. QRAM) is not free and can erase the advantage for literal database search.\n- On today's noisy hardware, error rates limit how many iterations can be run reliably.\n\nSummary: Grover's algorithm is optimal and genuinely faster, but the speedup is quadratic (sqrt(N) versus N), not exponential. For 4 items it works perfectly in a single iteration.\n"
+      },
+      {
+        "test_id": "7",
+        "rep": 1,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "11": 1.0,
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0
+        },
+        "mismatches": [],
+        "words": 458,
+        "output": "Not quite. Grover's algorithm gives a quadratic speedup, not an exponential one.\n\nSpeedup\n- Classical unstructured search over N items needs about N/2 oracle queries on average (N in the worst case).\n- Grover's algorithm needs about (pi/4)·sqrt(N) queries. That is O(sqrt(N)) versus O(N): a quadratic improvement.\n- This is provably optimal: no quantum algorithm can search an unstructured list with fewer than about sqrt(N) queries (Bennett, Bernstein, Brassard and Vazirani, 1997). So an exponential speedup for unstructured search is impossible. Exponential speedups (as in Shor's algorithm) come from exploiting special structure in the problem, which plain search does not have.\n\nHow it works for 4 items (N = 4, 2 qubits)\nLabel the items 00, 01, 10, 11 and suppose the marked item is 11.\n\n1. Start in |00> and apply a Hadamard to each qubit, giving the uniform superposition\n   |s> = 1/2 (|00> + |01> + |10> + |11>).\n   Every amplitude is 1/2, so each item has probability 1/4.\n\n2. Oracle: flip the sign of the marked item's amplitude.\n   1/2 (|00> + |01> + |10> - |11>)\n   Amplitudes: (1/2, 1/2, 1/2, -1/2). The probabilities are unchanged; only the phase is marked.\n\n3. Diffusion operator (inversion about the mean), D = 2|s><s| - I:\n   - Mean amplitude = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4.\n   - Each new amplitude = 2·mean - old amplitude:\n     unmarked: 2(1/4) - 1/2 = 0\n     marked:   2(1/4) - (-1/2) = 1\n   The state is now exactly |11>.\n\n4. Measure: you get 11 with probability 1, after a single oracle query.\n\nGeometric picture: the state lives in a 2D plane spanned by the marked state and the uniform superposition of unmarked states. The initial state makes an angle theta with the unmarked direction, where sin(theta) = 1/sqrt(N) = 1/2, so theta = 30 degrees. Each Grover iteration (oracle + diffusion) is two reflections, which together rotate the state by 2·theta = 60 degrees toward the marked state. Starting at 30 degrees, one iteration lands at 90 degrees: exactly the marked item. For N = 4 this works out perfectly; for general N you do about (pi/4)·sqrt(N) iterations and the success probability is close to, but not exactly, 1. Doing too many iterations overshoots and lowers the probability again.\n\nComparison for N = 4\n- Classical: 2.25 queries on average to find the item, and 3 in the worst case (if the first three checks miss, the last one must be it).\n- Grover: 1 query, with certainty.\n\nSo the 4-item case is a clean illustration, but the general advantage grows only as sqrt(N): for a million items, about 785 Grover iterations versus about 500,000 classical checks on average. That is a big gain, but it is quadratic, not exponential.\n"
+      }
+    ],
+    "summary": {
+      "completed_runs": 8,
+      "incomplete": 0,
+      "verified_correct": 8,
+      "stated_final_probabilities": 8,
+      "clean_json": 0,
+      "avg_words": 562
+    }
+  },
+  "v2": {
+    "runs": [
+      {
+        "test_id": "1",
+        "rep": 0,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "11": 1.0,
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0
+        },
+        "mismatches": [],
+        "words": 572,
+        "output": "1. Goal of the algorithm\nGrover's algorithm searches an unstructured list for an item that a \"checker\" (called the oracle) recognises as correct, here the item 11 among the four 2-bit items 00, 01, 10 and 11. It does this by repeatedly boosting the probability of the correct item so that measuring the qubits gives 11 with high probability, using about sqrt(N) checks instead of the roughly N/2 a classical search needs on average.\n\n2. Steps\nWe use 2 qubits, because 2 qubits can represent the 4 items. Write the state as a vector of 4 amplitudes in the order (00, 01, 10, 11). The probability of measuring an item is the square of its amplitude.\n\nStep 1 - Start in 00.\nBoth qubits begin at 0, so all the amplitude sits on item 00.\nState: (1, 0, 0, 0)\nProbabilities: 00 = 1, all others = 0.\n\nStep 2 - Create an equal superposition (apply a Hadamard gate to each qubit).\nThe Hadamard gate spreads each qubit evenly over 0 and 1, so the 4 items now share the amplitude equally.\nState: (1/2, 1/2, 1/2, 1/2)\nProbabilities: each item = (1/2)^2 = 1/4. If we measured now, we would just be guessing.\n\nFrom here on we also use bra-ket (Dirac) notation: |00> means the basis vector (1,0,0,0), |01> means (0,1,0,0), |10> means (0,0,1,0) and |11> means (0,0,0,1). So the state after Step 2 is\n(1/2)(|00> + |01> + |10> + |11>).\n\nStep 3 - Apply the oracle (mark the answer).\nThe oracle flips the sign of the amplitude of the marked item |11> and leaves the others alone. This changes no probability yet, because (-1/2)^2 = 1/4, but it \"tags\" the answer.\nState: (1/2)(|00> + |01> + |10> - |11>)   i.e. vector (1/2, 1/2, 1/2, -1/2)\nProbabilities: still 1/4 each.\n\nStep 4 - Apply the diffusion operator (inversion about the mean).\nThis reflects every amplitude about the average amplitude: new amplitude = 2 x (mean) - (old amplitude).\nMean = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4.\nFor |00>, |01>, |10>: 2(1/4) - 1/2 = 0.\nFor |11>: 2(1/4) - (-1/2) = 1.\nState: |11>   i.e. vector (0, 0, 0, 1)\n(In matrix form, the diffusion operator is 2|s><s| - I, where |s> is the equal superposition from Step 2.)\n\nThat completes one Grover iteration (oracle + diffusion). The usual rule is to repeat about (pi/4) x sqrt(N) times; for N = 4 this is about 1.57, and exactly 1 iteration is the right number here. Doing a second iteration would actually move the state away from |11> again.\n\n3. Final measurement result with probabilities\nMeasure both qubits after Step 4:\n- 11: probability 1 (100%)\n- 00: probability 0\n- 01: probability 0\n- 10: probability 0\nFor N = 4 with one marked item, a single iteration gives the answer with certainty on an ideal, noise-free quantum computer; on real hardware, noise will make the probability somewhat less than 1 (the exact value depends on the device, so I cannot give a specific number). For larger N, the success probability after the best number of iterations is high but usually not exactly 1.\n\n4. Common misconception\nGrover's algorithm does not give an exponential speedup: it needs about sqrt(N) oracle queries instead of about N, which is a quadratic speedup, and it does not work by \"checking all items at once and reading out the answer\".\n"
+      },
+      {
+        "test_id": "1",
+        "rep": 1,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0,
+          "11": 1.0
+        },
+        "mismatches": [],
+        "words": 493,
+        "output": "1. Goal of the algorithm\nGrover's algorithm searches an unstructured list for an item that a \"checker\" function (the oracle) recognises as marked, here the item 11 among the four items 00, 01, 10, 11. It needs about (pi/4)*sqrt(N) checks instead of the roughly N/2 checks a classical search needs on average, which is a quadratic speedup, not an exponential one.\n\n2. Steps\nWe use 2 qubits, because 2 qubits can represent 4 items. I write the state as a list of 4 amplitudes in the order (00, 01, 10, 11). The probability of measuring an item is its amplitude squared.\n\nStep 1 - Initialise.\nBoth qubits start at 0.\nState: (1, 0, 0, 0)\nThe system is definitely in 00.\n\nStep 2 - Create an equal superposition (apply a Hadamard gate to each qubit).\nEvery item now has the same amplitude.\nState: (1/2, 1/2, 1/2, 1/2)\nEach item has probability (1/2)^2 = 1/4, so measuring now would just be a random guess.\n\nStep 3 - Apply the oracle (mark the answer).\nThe oracle flips the sign of the amplitude of the marked item 11 and leaves the others alone. In bra-ket notation, it maps |11> to -|11>.\nState: (1/2, 1/2, 1/2, -1/2), which is (1/2)(|00> + |01> + |10> - |11>)\nThe probabilities have not changed yet (still 1/4 each); only the sign of 11 is different.\n\nStep 4 - Apply the diffusion operator (\"inversion about the mean\").\nThis is built from Hadamards, a phase flip on |00>, and Hadamards again. Its effect is to replace each amplitude a with (2 x mean - a).\nMean of the amplitudes = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4.\n- For 00, 01, 10: 2(1/4) - 1/2 = 0\n- For 11: 2(1/4) - (-1/2) = 1\nState: (0, 0, 0, 1), which is |11>\nFor N = 4, one oracle call plus one diffusion step (one Grover iteration) is exactly the right amount; (pi/4)*sqrt(4) is about 1.57, which rounds to 1 iteration.\n\n3. Final measurement result with probabilities\nMeasuring both qubits in the state |11> gives:\n- |00>: 0%\n- |01>: 0%\n- |10>: 0%\n- |11>: 100%\nSo the marked item 11 is found with certainty after a single oracle query, whereas a classical search over 4 items needs up to 3 queries in the worst case (about 2.25 on average if you stop early). The 100% holds for ideal, noise-free qubits; on real hardware noise lowers it, and I cannot give an exact figure because it depends on the device. Getting exactly 100% is also a special feature of N = 4 with one marked item. For larger N the success probability is high but usually not exactly 1.\n\n4. Common misconception\nGrover's algorithm does not \"check all items at once and read out the answer\" or give an exponential speedup; it slowly amplifies the marked item's amplitude through interference, which gives only a quadratic (sqrt(N)) speedup.\n"
+      },
+      {
+        "test_id": "3",
+        "rep": 0,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0,
+          "11": 1.0
+        },
+        "mismatches": [],
+        "words": 600,
+        "output": "1. Goal of the algorithm\n\nWe are given a black-box (oracle) function f: {0,1}^2 -> {0,1} that is promised to be either constant (same output on all 4 inputs) or balanced (outputs 0 on exactly 2 inputs and 1 on the other 2), and we must decide which. Deutsch-Jozsa answers this with certainty using a single query to the oracle, whereas a deterministic classical algorithm needs 2^(n-1) + 1 = 3 queries in the worst case for n = 2.\n\n2. Steps\n\nFor a concrete balanced example, take f(x1 x2) = x1 XOR x2, so f(00) = 0, f(01) = 1, f(10) = 1, f(11) = 0. We use 2 input qubits and 1 ancilla (output) qubit. The oracle acts as U_f |x>|y> = |x>|y XOR f(x)>.\n\nStep 0 - Initialise.\nPut the input qubits in |0> and the ancilla in |1>.\nState: |00>|1>\n\nStep 1 - Apply a Hadamard to every qubit (H tensor H tensor H).\nRecall H|0> = (|0> + |1>)/sqrt(2) = |+> and H|1> = (|0> - |1>)/sqrt(2) = |->.\nState: |+>|+>|-> = (1/2)(|00> + |01> + |10> + |11>) tensor |->\nThe input register is now an equal superposition of all 4 inputs, each with amplitude 1/2.\n\nStep 2 - Apply the oracle U_f once.\nBecause the ancilla is |->, U_f|x>|-> = (-1)^f(x) |x>|-> (phase kickback: the value of f becomes a sign on |x>, and the ancilla is unchanged).\nState: (1/2)( (-1)^f(00)|00> + (-1)^f(01)|01> + (-1)^f(10)|10> + (-1)^f(11)|11> ) tensor |->\nFor f = x1 XOR x2:\nState: (1/2)( |00> - |01> - |10> + |11> ) tensor |->\nThis factors as |->|->|->, i.e. the input register is |-->.\n\nStep 3 - Apply a Hadamard to each input qubit (H tensor H on the first two qubits; the ancilla can be ignored from here).\nIn general, (H tensor H)|x> = (1/2) sum_z (-1)^(x.z) |z>, so the amplitude of |z> after this step is (1/4) sum_x (-1)^(f(x) + x.z).\nThe amplitude of |00> is (1/4) sum_x (-1)^f(x) = (1/4)(1 - 1 - 1 + 1) = 0. This is 0 for every balanced f, because the +1 and -1 terms cancel exactly.\nFor our f, H|-> = |1> on each qubit, so:\nState: |11> tensor |->\n\nStep 4 - Measure the two input qubits in the computational basis.\n\n3. Final measurement result with probabilities\n\nFor f(x) = x1 XOR x2:\nP(00) = 0\nP(01) = 0\nP(10) = 0\nP(11) = 1\n\nThe outcome is 11 with probability 1. The decision rule is: if the result is 00, f is constant; if it is anything other than 00, f is balanced. Since P(00) = 0 for every balanced function, the algorithm outputs \"balanced\" with certainty. (For a constant f, the same circuit gives 00 with probability 1.) Which non-zero string you get depends on which balanced function it is; for example, f(x) = x1 gives 10 with probability 1.\n\nOn speedup: for n = 2 this is 1 query versus 3 deterministic classical queries, a constant-factor saving. For general n, the gap is 1 versus 2^(n-1) + 1, which is exponential only against exact deterministic classical algorithms; a randomized classical algorithm that may err with small probability needs only a constant number of queries, so this is not an exponential speedup over all classical methods.\n\n4. Common misconception\n\nA common misconception is that the algorithm \"computes f on all inputs at once and reads out all the values\", when in fact the measurement reveals only one global property (constant vs balanced), produced by interference that makes the |00> amplitude cancel to zero for balanced functions.\n"
+      },
+      {
+        "test_id": "3",
+        "rep": 1,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0,
+          "11": 1.0
+        },
+        "mismatches": [],
+        "words": 609,
+        "output": "1. Goal of the algorithm\n\nGiven a black-box function f: {0,1}^2 -> {0,1} that is promised to be either constant (same output for all 4 inputs) or balanced (outputs 0 on exactly 2 inputs and 1 on the other 2), Deutsch-Jozsa decides which case holds. It does this with a single query to the oracle, whereas a deterministic classical algorithm needs up to 2^(n-1) + 1 = 3 queries in the worst case for n = 2.\n\n2. Steps\n\nExample balanced function used throughout: f(x1 x2) = x1 XOR x2, so f(00) = 0, f(01) = 1, f(10) = 1, f(11) = 0.\nOracle: U_f |x>|y> = |x>|y XOR f(x)>, where x is the 2-qubit input register and y is a 1-qubit ancilla.\nNotation: |+> = (|0> + |1>)/sqrt(2), |-> = (|0> - |1>)/sqrt(2), H = (1/sqrt(2)) [[1, 1], [1, -1]].\n\nStep 1 - Initialise.\nPut the two input qubits in |0> and the ancilla in |1>.\n|psi_0> = |00>|1>\n\nStep 2 - Apply H to all three qubits (H tensor H tensor H).\nH|0> = |+>, H|1> = |->, so the input register becomes an equal superposition of all 4 inputs.\n|psi_1> = (1/2)(|00> + |01> + |10> + |11>) |->\n        = (1/2) SUM_x |x> |->\n\nStep 3 - Query the oracle once (apply U_f).\nBecause the ancilla is |->, U_f |x>|-> = (-1)^f(x) |x>|-> (phase kickback: if f(x) = 1, |0> and |1> in the ancilla swap, which flips the sign of |->). The function value moves into the phase of the input register.\n|psi_2> = (1/2) SUM_x (-1)^f(x) |x> |->\n        = (1/2)( (+1)|00> + (-1)|01> + (-1)|10> + (+1)|11> ) |->\n        = (1/2)(|00> - |01> - |10> + |11>) |->\nNote that (1/2)(|00> - |01> - |10> + |11>) = |-> tensor |->, so\n|psi_2> = |->|->|->\nThe ancilla is now unentangled and can be ignored.\n\nStep 4 - Apply H to each of the two input qubits (H tensor H).\nIn general, H^(tensor 2)|x> = (1/2) SUM_z (-1)^(x.z) |z>, so the amplitude of |z> after this step is\na(z) = (1/4) SUM_x (-1)^(f(x) + x.z).\nFor z = 00: a(00) = (1/4)(1 - 1 - 1 + 1) = 0. This is the key fact: for any balanced f the |00> amplitude is exactly 0, and for any constant f it is +1 or -1.\nFor our specific f, H|-> = |1> on each input qubit, so\n|psi_3> = |11> |->\n\nStep 5 - Measure the two input qubits in the computational basis.\n\n3. Final measurement result with probabilities\n\nFinal input-register state: |11>\nP(00) = |a(00)|^2 = 0\nP(01) = 0\nP(10) = 0\nP(11) = 1\n\nThe outcome is 11 with certainty. Decision rule: if the measured result is 00, f is constant; if it is anything other than 00, f is balanced. Since P(00) = 0 here, the algorithm reports \"balanced\" with probability 1 (in an ideal, noise-free circuit). A different balanced function would give a different non-zero outcome (for example, f(x1 x2) = x1 gives 10), but never 00.\n\nOn speedup: for n = 2 this is 1 quantum query versus 3 deterministic classical queries. The gap versus deterministic classical algorithms grows exponentially in n (1 versus 2^(n-1) + 1), but a randomized classical algorithm can decide the problem with a small constant number of queries and a small error probability, so there is no exponential speedup over bounded-error classical algorithms.\n\n4. Common misconception\n\nDeutsch-Jozsa does not \"evaluate f on all inputs and read out every value in parallel\" - the measurement only reveals a single global property (constant vs balanced) obtained through interference, and the individual values f(x) are never learned.\n"
+      },
+      {
+        "test_id": "5",
+        "rep": 0,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "00": 0.5,
+          "11": 0.5,
+          "01": 0.0,
+          "10": 0.0
+        },
+        "mismatches": [],
+        "words": 519,
+        "output": "1. Goal of the algorithm\nThe goal is to take two qubits that start in a plain, unentangled state and put them into a Bell state, the simplest example of two qubits that are entangled, so that measuring one tells you the outcome of the other. It is a building block (used in quantum teleportation, superdense coding and entanglement-based key distribution), not a speedup algorithm, so it gives no exponential speedup over anything.\n\n2. Steps\nNotation for now: a two-qubit state is a vector of 4 amplitudes, one for each basis outcome in the order 00, 01, 10, 11 (first digit = qubit A, second digit = qubit B). The probability of an outcome is the squared magnitude of its amplitude.\n\nStep 1. Start both qubits in 0.\nState: amplitudes (1, 0, 0, 0) -> the system is definitely \"00\".\n\nStep 2. Apply a Hadamard gate H to qubit A only.\nH is the 2x2 matrix (1/sqrt2) * [[1, 1], [1, -1]]. It turns qubit A's \"0\" into an equal mix of 0 and 1, while qubit B stays 0.\nState: amplitudes (1/sqrt2, 0, 1/sqrt2, 0) -> an equal superposition of \"00\" and \"10\".\nThis state is still NOT entangled: it is just (qubit A in an equal mix of 0 and 1) times (qubit B = 0), so you could describe each qubit separately.\n\nStep 3. Apply a CNOT gate with qubit A as control and qubit B as target.\nCNOT flips qubit B only when qubit A is 1. As a 4x4 matrix it swaps the amplitudes of \"10\" and \"11\" and leaves \"00\" and \"01\" alone.\nSo \"00\" stays \"00\", and \"10\" becomes \"11\".\nState: amplitudes (1/sqrt2, 0, 0, 1/sqrt2).\nNow introducing bra-ket notation, where |00> just means \"the basis vector for outcome 00\":\nState = (1/sqrt2)|00> + (1/sqrt2)|11> = (|00> + |11>) / sqrt2\nThis is the Bell state usually called |Phi+>. It cannot be written as (state of A) times (state of B), which is exactly what \"entangled\" means.\n\n3. Final measurement result with probabilities\nMeasuring both qubits in the standard (computational) basis on the state (|00> + |11>)/sqrt2:\n- 00 with probability |1/sqrt2|^2 = 1/2 (50%)\n- 11 with probability |1/sqrt2|^2 = 1/2 (50%)\n- 01 with probability 0\n- 10 with probability 0\nEach individual qubit looks like a fair coin flip, but the two results always agree. If you measure only qubit A and get 0, qubit B will be 0 when measured; if A gives 1, B gives 1. On a real noisy device you would see small nonzero counts for 01 and 10 because of gate and readout errors; the exact amount depends on the hardware, so I cannot give a precise number.\n(Variants: starting from 01, 10 or 11 instead of 00 gives the other three Bell states, (|01> + |10>)/sqrt2, (|00> - |11>)/sqrt2 and (|01> - |10>)/sqrt2.)\n\n4. Common misconception\nEntanglement does not let you send information faster than light: the person holding qubit A cannot choose their outcome, so qubit B's results alone look completely random until the two sides compare notes over an ordinary channel.\n"
+      },
+      {
+        "test_id": "5",
+        "rep": 1,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "00": 0.5,
+          "11": 0.5,
+          "01": 0.0,
+          "10": 0.0
+        },
+        "mismatches": [],
+        "words": 415,
+        "output": "1. Goal of the algorithm\nThe goal is to take two qubits that start in a plain, unentangled state and turn them into a Bell state, a pair whose measurement results are perfectly correlated even though each result on its own is random. This is a small two-gate circuit that shows how entanglement is created. It gives no speedup by itself, exponential or otherwise, but it is a building block for protocols like quantum teleportation and superdense coding.\n\n2. Steps\nNotation for this section: a two-qubit state is a column vector of 4 amplitudes, one for each basis outcome in the order (00, 01, 10, 11). The probability of an outcome is the squared magnitude of its amplitude.\n\nStep 1 - Start both qubits in 0.\nQubit A = 0, qubit B = 0.\nState: (1, 0, 0, 0), meaning outcome 00 with amplitude 1.\n\nStep 2 - Apply a Hadamard gate (H) to qubit A.\nH sends a single qubit in 0 to an equal superposition of 0 and 1, each with amplitude 1/sqrt(2). Qubit B is unchanged.\nState: (1/sqrt(2), 0, 1/sqrt(2), 0), meaning 00 and 10 each have amplitude 1/sqrt(2) (about 0.707).\nThe two qubits are still independent at this point: A is \"half 0, half 1\", and B is definitely 0.\n\nStep 3 - Apply a CNOT gate with qubit A as control and qubit B as target.\nCNOT flips B only when A is 1. So the 00 part stays 00, and the 10 part becomes 11.\nState: (1/sqrt(2), 0, 0, 1/sqrt(2)), meaning 00 and 11 each have amplitude 1/sqrt(2).\nIn bra-ket notation, which we can now introduce, this is the Bell state\n|Phi+> = (|00> + |11>) / sqrt(2).\nThis state cannot be written as (state of A) times (state of B). That is what \"entangled\" means.\n\n3. Final measurement result with probabilities\nMeasuring both qubits in the standard basis gives:\n- |00> with probability (1/sqrt(2))^2 = 1/2 = 50%\n- |11> with probability (1/sqrt(2))^2 = 1/2 = 50%\n- |01> with probability 0\n- |10> with probability 0\nEach qubit on its own looks like a fair coin flip, but the two results always agree. If A reads 0, B reads 0; if A reads 1, B reads 1.\n\n4. Common misconception\nEntanglement does not let you send information faster than light: each person's result alone is just a random 50/50 bit, and the correlation only shows up when the two results are compared over an ordinary communication channel.\n"
+      },
+      {
+        "test_id": "7",
+        "rep": 0,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0,
+          "11": 1.0
+        },
+        "mismatches": [],
+        "words": 492,
+        "output": "1. Goal of the algorithm\nGrover's algorithm finds one \"marked\" item in an unsorted list of N items, where the only way to recognise the item is to ask a black-box checker (\"oracle\") whether a given item is the right one. It does this with about (pi/4) x sqrt(N) oracle queries instead of the roughly N queries a classical computer needs, which is a quadratic speedup, not an exponential one.\n\n2. Steps\nSetup: 4 items need 2 qubits, because 2 qubits can represent 4 labels: 00, 01, 10, 11. We describe the 2-qubit state as a vector of 4 amplitudes, written in the order [00, 01, 10, 11]. The probability of measuring a label is the square of its amplitude. Suppose the marked item is 11 (the algorithm does not know this; only the oracle does).\n\nStep 1 - Initialise both qubits to 0.\nState: [1, 0, 0, 0]\n(All amplitude is on label 00.)\n\nStep 2 - Apply a Hadamard gate to each qubit to create an equal superposition.\nState: [1/2, 1/2, 1/2, 1/2]\n(Each label has probability (1/2)^2 = 1/4. Measuring now would be no better than a random guess.)\n\nStep 3 - Apply the oracle. It flips the sign of the amplitude of the marked item and leaves the others unchanged.\nState: [1/2, 1/2, 1/2, -1/2]\n(Probabilities are still all 1/4, because squaring removes the sign. The information is hidden in the phase.)\n\nStep 4 - Apply the diffusion operator (\"inversion about the mean\"). Each amplitude a is replaced by 2 x mean - a.\nMean of the amplitudes = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4.\nUnmarked items: 2 x 1/4 - 1/2 = 0\nMarked item: 2 x 1/4 - (-1/2) = 1\nState: [0, 0, 0, 1]\n(Steps 3 and 4 together form one \"Grover iteration\". For N = 4, the optimal number of iterations is exactly 1, which matches (pi/4) x sqrt(4) = about 1.57, rounded down to 1.)\n\n3. Final measurement result with probabilities\nUsing bra-ket notation now: the final state is |11>, i.e. 0|00> + 0|01> + 0|10> + 1|11>.\nP(00) = 0\nP(01) = 0\nP(10) = 0\nP(11) = 1\nSo, on an ideal noiseless quantum computer, measuring gives the marked item 11 with probability 100% after a single oracle query. A classical algorithm needs on average 2.25 queries for 4 items (up to 3 in the worst case, since if the first 3 checks fail, the 4th item must be the answer). For N = 4 the success probability being exactly 1 is a special case. For larger N, Grover's success probability is high but generally not exactly 1, and on real noisy hardware it will be lower.\n\n4. Common misconception\nGrover's algorithm is often said to give an exponential speedup, but its speedup is only quadratic (O(sqrt(N)) versus O(N)), and it is proven that no quantum algorithm can search an unstructured list faster than that.\n"
+      },
+      {
+        "test_id": "7",
+        "rep": 1,
+        "json_clean": false,
+        "verified": true,
+        "claim": {
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0,
+          "11": 1.0
+        },
+        "mismatches": [],
+        "words": 513,
+        "output": "Short answer first: no. Grover's algorithm gives a quadratic speedup, not an exponential one. Searching N unsorted items takes about N/2 checks on average classically (N in the worst case). Grover needs only about (pi/4) * sqrt(N) oracle queries. That gap is real and useful, but it is quadratic. Exponential speedups are known for other problems, such as factoring with Shor's algorithm.\n\n1. Goal of the algorithm\nGrover's algorithm finds the one \"marked\" item in an unsorted list of N items. It uses a black-box checker (the oracle) that can only answer \"is this the right item?\", and it needs about sqrt(N) checks instead of about N.\n\n2. Steps (4 items, so 2 qubits; the marked item is assumed to be item 3, written 11 in binary)\nWe write the 2-qubit state as a vector of 4 amplitudes, one for each basis pattern, in the order [00, 01, 10, 11]. The probability of measuring a pattern is its amplitude squared.\n\nStep 1 - Initialise. Both qubits start at 0.\n   State: [1, 0, 0, 0]  (certainly 00)\n\nStep 2 - Create an equal superposition. Apply a Hadamard gate to each qubit.\n   State: [1/2, 1/2, 1/2, 1/2]\n   Each item now has probability (1/2)^2 = 1/4, the same as a random guess.\n\nStep 3 - Oracle (one query). The oracle flips the sign of the marked item's amplitude and leaves the others alone. The probabilities do not change yet, because (-1/2)^2 = 1/4, but the sign is now different.\n   State: [1/2, 1/2, 1/2, -1/2]\n\nStep 4 - Diffusion (\"inversion about the mean\"). Every amplitude a becomes (2 * mean - a).\n   Mean = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4, so 2 * mean = 1/2.\n   Unmarked items: 1/2 - 1/2 = 0\n   Marked item: 1/2 - (-1/2) = 1\n   State: [0, 0, 0, 1]\n   (In circuit form this is: Hadamards, a phase flip on every state except 00, then Hadamards again.)\n\nSteps 3 and 4 together make one \"Grover iteration\". The usual number of iterations is about (pi/4) * sqrt(N). For N = 4 that is about 1.57, which rounds to 1, and for N = 4 one iteration happens to be exactly enough.\n\n3. Final measurement result with probabilities\nIn bra-ket notation (|x> just means \"the basis state labelled x\"), the final state is\n   |psi> = 0|00> + 0|01> + 0|10> + 1|11> = |11>\nMeasuring both qubits gives:\n   P(00) = 0,  P(01) = 0,  P(10) = 0,  P(11) = 1\nSo for N = 4 we find the marked item with certainty (100%) after a single oracle query. A classical search that checks items one at a time needs more than 2 checks on average (about 2.25 if you skip checking the last remaining item, otherwise 2.5). For larger N, Grover's success probability is usually close to 1 but not exactly 1.\n\n4. Common misconception\nGrover does not give an exponential speedup. It is a provably optimal quadratic speedup (about sqrt(N) versus N queries), and running more iterations than needed actually lowers the success probability instead of improving it.\n"
+      }
+    ],
+    "summary": {
+      "completed_runs": 8,
+      "incomplete": 0,
+      "verified_correct": 8,
+      "stated_final_probabilities": 8,
+      "clean_json": 0,
+      "avg_words": 527
+    }
+  },
+  "v3": {
+    "runs": [
+      {
+        "test_id": "1",
+        "rep": 0,
+        "json_clean": true,
+        "verified": true,
+        "claim": {
+          "11": 1.0,
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0
+        },
+        "mismatches": [],
+        "words": 249,
+        "output": "{\"goal\": \"Find the marked item 11 among 4 items (00, 01, 10, 11) using only one call to the checking function (the oracle).\", \"steps\": [{\"n\": 1, \"action\": \"Start with both qubits as 0. Each basis state like |00> is just a column vector with a single 1 in it.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits: now all 4 items are in an equal mix, each with amplitude 1/2.\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"The oracle recognises the marked item 11 and flips the sign of its amplitude (from +1/2 to -1/2). The probabilities do not change yet.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Apply the diffusion step (reflect every amplitude about the average). The average amplitude is (1/2 + 1/2 + 1/2 - 1/2)/4 = 1/4. Each new amplitude = 2 x 1/4 - old amplitude, so 1/2 becomes 0 and -1/2 becomes 1.\", \"state\": \"|11>\"}, {\"n\": 5, \"action\": \"Measure both qubits.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0 after one Grover iteration; 00, 01 and 10 each have probability 0.\", \"analogy\": \"Like a teacher who quietly marks the right answer with a minus sign, then a 'flip around the average' step makes the marked answer stand tall while all the others shrink to nothing.\", \"misconception\": \"Grover's speedup is quadratic (about sqrt(N) oracle calls instead of about N), not exponential; with 4 items one call happens to be exactly enough.\", \"uncertain\": []}\n"
+      },
+      {
+        "test_id": "1",
+        "rep": 1,
+        "json_clean": true,
+        "verified": true,
+        "claim": {
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0,
+          "11": 1.0
+        },
+        "mismatches": [],
+        "words": 290,
+        "output": "{\"goal\": \"Find the marked item 11 among the 4 items 00, 01, 10, 11 using only one oracle check.\", \"steps\": [{\"n\": 1, \"action\": \"Start with both qubits as 0. Here |0> is just the column vector [1, 0] and |1> is the column vector [0, 1]; the two-qubit label |00> means both qubits are 0.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits: now all 4 items have the same amplitude 1/2, so each is equally likely (probability 1/4).\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"Ask the oracle once: it flips the sign of the marked item 11 only. Probabilities do not change yet, but 11 is now 'tagged' with a minus sign.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Apply the diffusion step (reflect every amplitude about the average). The amplitudes are 1/2, 1/2, 1/2, -1/2, so the average is 1/4. Each new amplitude = 2 x 1/4 - old amplitude: 00, 01, 10 become 0, and 11 becomes 1/2 + 1/2 = 1.\", \"state\": \"|11>\"}, {\"n\": 5, \"action\": \"Measure both qubits.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0 (amplitude 1, squared) and 00, 01, 10 with probability 0, after just one Grover iteration.\", \"analogy\": \"Like a room of 4 people standing at equal height: the oracle makes the right person crouch down, then everyone mirrors their height around the room's average, so the crouched person shoots up tall and the others drop to the floor.\", \"misconception\": \"Grover's algorithm does not check all items at once and read the answer instantly; its speedup is quadratic (about sqrt(N) oracle checks), not exponential. With exactly 4 items, one iteration happens to give the answer with certainty.\", \"uncertain\": []}"
+      },
+      {
+        "test_id": "3",
+        "rep": 0,
+        "json_clean": true,
+        "verified": true,
+        "claim": {
+          "11": 1.0,
+          "00": 0.0
+        },
+        "mismatches": [],
+        "words": 346,
+        "output": "{\"goal\": \"Decide with a single oracle query whether f: {0,1}^2 -> {0,1} is constant or balanced; here we use the balanced function f(x1x2) = x1 XOR x2 (f = 0 on 00 and 11, f = 1 on 01 and 10).\",\n \"steps\": [\n  {\"n\": 1, \"action\": \"Prepare 2 input qubits in |0> and 1 ancilla (output) qubit in |1>.\", \"state\": \"|00>|1>\"},\n  {\"n\": 2, \"action\": \"Apply H = (1/sqrt(2))[[1,1],[1,-1]] to all three qubits. The inputs become a uniform superposition and the ancilla becomes |-> = (|0> - |1>)/sqrt(2).\", \"state\": \"(|00> + |01> + |10> + |11>)/2 ⊗ (|0> - |1>)/sqrt(2)\"},\n  {\"n\": 3, \"action\": \"Apply the oracle U_f|x>|y> = |x>|y XOR f(x)> once. Because the ancilla is |->, this gives phase kickback: |x>|-> -> (-1)^f(x)|x>|->. So |01> and |10> (where f = 1) pick up a minus sign.\", \"state\": \"(|00> - |01> - |10> + |11>)/2 ⊗ (|0> - |1>)/sqrt(2)\"},\n  {\"n\": 4, \"action\": \"Notice the input register factorises: (|00> - |01> - |10> + |11>)/2 = |->|->. Apply H⊗H to the two input qubits; since H|-> = |1>, the input register becomes |11>. In general the amplitude of |00> after this step is (1/4) * sum over x of (-1)^f(x) = (1/4)(1 - 1 - 1 + 1) = 0.\", \"state\": \"|11> ⊗ (|0> - |1>)/sqrt(2)\"},\n  {\"n\": 5, \"action\": \"Measure the two input qubits in the computational basis. Rule: all zeros (00) means constant; any other result means balanced.\", \"state\": \"|11> ⊗ (|0> - |1>)/sqrt(2)\"}],\n \"final_result\": \"Measuring the input qubits gives 11 with probability 1.0 and 00 with probability 0, so the algorithm correctly reports 'balanced' after just one oracle query. (A different balanced f gives a different non-zero outcome, but 00 always has probability 0 for any balanced f.)\",\n \"analogy\": \"\",\n \"misconception\": \"Deutsch-Jozsa needs only one oracle query, while a deterministic classical algorithm needs up to 2^(n-1) + 1 = 3 queries for n = 2 in the worst case; however, a randomized classical algorithm can guess the answer with high probability using only a few queries, so this is not a practical exponential advantage.\",\n \"uncertain\": []}\n"
+      },
+      {
+        "test_id": "3",
+        "rep": 1,
+        "json_clean": true,
+        "verified": true,
+        "claim": {
+          "11": 1.0,
+          "00": 0.0
+        },
+        "mismatches": [],
+        "words": 340,
+        "output": "{\"goal\": \"Decide with a single oracle query whether a 2-bit function f is constant or balanced; here f is balanced, using the example f(x1x2) = x1 XOR x2 (f(00)=0, f(01)=1, f(10)=1, f(11)=0).\",\n \"steps\": [\n  {\"n\": 1, \"action\": \"Prepare two input qubits in |0> and one ancilla qubit in |1>, written as |x1 x2>|ancilla>.\", \"state\": \"|00>|1>\"},\n  {\"n\": 2, \"action\": \"Apply H = (1/sqrt(2))[[1,1],[1,-1]] to all three qubits. The inputs become an equal superposition of all 4 inputs and the ancilla becomes |-> = (|0> - |1>)/sqrt(2).\", \"state\": \"(|00> + |01> + |10> + |11>)/2 ⊗ (|0> - |1>)/sqrt(2)\"},\n  {\"n\": 3, \"action\": \"Apply the oracle U_f|x>|y> = |x>|y XOR f(x)> once. Because the ancilla is |->, this gives phase kickback: |x>|-> becomes (-1)^f(x) |x>|->. With f = x1 XOR x2, the inputs |01> and |10> get a minus sign.\", \"state\": \"(|00> - |01> - |10> + |11>)/2 ⊗ (|0> - |1>)/sqrt(2)\"},\n  {\"n\": 4, \"action\": \"Note that the input part factors as |->|-> = ((|0> - |1>)/sqrt(2)) ⊗ ((|0> - |1>)/sqrt(2)). Apply H to each input qubit; since H|-> = |1>, the inputs become |11>.\", \"state\": \"|11> ⊗ (|0> - |1>)/sqrt(2)\"},\n  {\"n\": 5, \"action\": \"Measure the two input qubits. In general the amplitude of |00> after the final H gates is (1/4) * sum over x of (-1)^f(x), which is 0 for any balanced f and ±1 for a constant f.\", \"state\": \"|11> ⊗ (|0> - |1>)/sqrt(2)  (amplitude of |00> = (1 - 1 - 1 + 1)/4 = 0)\"}],\n \"final_result\": \"Measuring the input qubits gives 11 with probability 1.0 and 00 with probability 0. Since the result is not 00, the function is balanced, decided with one oracle query.\",\n \"analogy\": \"\",\n \"misconception\": \"Deutsch-Jozsa needs only one oracle query, while a deterministic classical algorithm needs up to 2^(n-1) + 1 = 3 queries for n = 2 in the worst case; however, it solves a promise problem, and a randomized classical algorithm can answer correctly with high probability using only a few queries, so this is not a practical exponential speedup.\",\n \"uncertain\": []}\n"
+      },
+      {
+        "test_id": "5",
+        "rep": 0,
+        "json_clean": true,
+        "verified": true,
+        "claim": {
+          "00": 0.5,
+          "11": 0.5,
+          "01": 0.0,
+          "10": 0.0
+        },
+        "mismatches": [],
+        "words": 241,
+        "output": "{\"goal\": \"Make two qubits that always give the same measurement result, even though each result on its own is random.\", \"steps\": [{\"n\": 1, \"action\": \"Start with both qubits as 0. A single qubit 0 is the column vector |0> = [1, 0] and 1 is |1> = [0, 1]; writing |00> just means first qubit 0, second qubit 0.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply the Hadamard gate H to the first qubit. It turns |0> into an equal mix (|0> + |1>)/sqrt(2), so the first qubit is now half 0 and half 1, while the second stays 0.\", \"state\": \"(|00> + |10>)/sqrt(2)\"}, {\"n\": 3, \"action\": \"Apply CNOT with the first qubit as control and the second as target: it flips the second qubit only when the first qubit is 1. So |00> stays |00>, and |10> becomes |11>.\", \"state\": \"(|00> + |11>)/sqrt(2)\"}, {\"n\": 4, \"action\": \"Measure both qubits. Each part of the mix has amplitude 1/sqrt(2), and probability is amplitude squared: (1/sqrt(2))^2 = 0.5.\", \"state\": \"(|00> + |11>)/sqrt(2)\"}], \"final_result\": \"Measuring gives 00 with probability 0.5 and 11 with probability 0.5; you never get 01 or 10. This state (|00> + |11>)/sqrt(2) is the Bell state.\", \"analogy\": \"Like two magic coins: each lands heads or tails at random, but the two always land the same way as each other.\", \"misconception\": \"Entanglement does not let you send messages faster than light; each person alone just sees random 0s and 1s.\", \"uncertain\": []}"
+      },
+      {
+        "test_id": "5",
+        "rep": 1,
+        "json_clean": true,
+        "verified": true,
+        "claim": {
+          "00": 0.5,
+          "11": 0.5,
+          "01": 0.0,
+          "10": 0.0
+        },
+        "mismatches": [],
+        "words": 250,
+        "output": "{\"goal\": \"Make two qubits that are linked so that measuring them always gives the same result (both 0 or both 1).\", \"steps\": [{\"n\": 1, \"action\": \"Start with both qubits as 0. A single qubit 0 is the column vector |0> = [1, 0] and 1 is |1> = [0, 1]; we write the pair of qubits as |00>.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply the Hadamard gate H to the first qubit. It turns |0> into an equal mix (|0> + |1>)/sqrt(2), so the first qubit is now half 0 and half 1, while the second stays 0.\", \"state\": \"(|00> + |10>)/sqrt(2)\"}, {\"n\": 3, \"action\": \"Apply CNOT with the first qubit as control and the second as target: flip the second qubit only when the first is 1. |00> stays |00>, and |10> becomes |11>.\", \"state\": \"(|00> + |11>)/sqrt(2)\"}, {\"n\": 4, \"action\": \"Measure both qubits. Each part has amplitude 1/sqrt(2), so each outcome has probability (1/sqrt(2))^2 = 0.5.\", \"state\": \"(|00> + |11>)/sqrt(2) before measurement; after measurement either |00> or |11>\"}], \"final_result\": \"The Bell state (|00> + |11>)/sqrt(2) is created by H on the first qubit followed by CNOT. Measuring gives 00 with probability 0.5 and 11 with probability 0.5; never 01 or 10.\", \"analogy\": \"Like two magic coins that are always flipped together: each lands heads or tails at random, but both always show the same side.\", \"misconception\": \"Entanglement does not let you send messages faster than light, because each person alone just sees random 0s and 1s.\", \"uncertain\": []}"
+      },
+      {
+        "test_id": "7",
+        "rep": 0,
+        "json_clean": true,
+        "verified": true,
+        "claim": {
+          "11": 1.0,
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0
+        },
+        "mismatches": [],
+        "words": 322,
+        "output": "{\"goal\": \"Find the marked item 11 among 4 items using only one question to the oracle, and see why the speedup is quadratic, not exponential.\", \"steps\": [{\"n\": 1, \"action\": \"A small correction first: Grover's search is faster than classical search, but the speedup is quadratic, not exponential. Classical search over N items needs about N/2 checks on average; Grover needs about sqrt(N) oracle calls. For 4 items, one Grover call is enough. Start with both qubits as 0. Each basis state like |00> is just a column vector with a single 1 in it.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits: now all 4 items have the same amplitude 1/2, so each is equally likely (1/4).\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"The oracle marks the answer by flipping the sign of the amplitude of |11>. The probabilities have not changed yet, only the sign.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Diffusion step: find the average amplitude, (1/2 + 1/2 + 1/2 - 1/2)/4 = 1/4, then flip every amplitude around this average (new = 2 x average - old). The amplitudes 1/2 become 0 and -1/2 becomes 1.\", \"state\": \"|11>\"}, {\"n\": 5, \"action\": \"Measure both qubits.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0 and 00, 01, 10 with probability 0, after one oracle call. A classical search would need up to 3 checks (2.25 on average). In general Grover needs about sqrt(N) calls compared with about N classically, which is a quadratic speedup, not an exponential one.\", \"analogy\": \"Like a room of 4 people where the one you want steps back a little; then everyone is mirrored around the average position, so the others end up back at zero and that person ends up far in front, easy to spot.\", \"misconception\": \"Grover's speedup is quadratic (about sqrt(N) queries instead of about N), not exponential.\", \"uncertain\": []}"
+      },
+      {
+        "test_id": "7",
+        "rep": 1,
+        "json_clean": true,
+        "verified": true,
+        "claim": {
+          "11": 1.0,
+          "00": 0.0,
+          "01": 0.0,
+          "10": 0.0
+        },
+        "mismatches": [],
+        "words": 287,
+        "output": "{\"goal\": \"Find the marked item 11 among 4 items using only one call to the oracle (the 'checker').\", \"steps\": [{\"n\": 1, \"action\": \"First, a small correction: Grover's speedup is quadratic, not exponential. A classical search of N items needs about N checks; Grover needs about sqrt(N). For 4 items, one Grover check is enough. We start with both qubits as 0. Here |0> is the column vector [1, 0] and |1> is the column vector [0, 1]; two qubits written together, like |00>, mean both are 0.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits: now all 4 items 00, 01, 10, 11 are in an equal mix, each with amplitude 1/2.\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"The oracle checks each item and flips the sign of the marked one, 11. Probabilities do not change yet, only the sign.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Diffusion: reflect every amplitude about the average. The amplitudes are 1/2, 1/2, 1/2, -1/2, so the average is 1/4. Each new amplitude is 2 x (1/4) minus the old one: the three unmarked items become 0 and the marked item becomes 1.\", \"state\": \"|11>\"}, {\"n\": 5, \"action\": \"Measure both qubits.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0 after one Grover iteration; 00, 01 and 10 have probability 0.\", \"analogy\": \"Like a room of people where the one you want is told to step backward; then everyone is told to mirror their position around the group's average spot, which pushes the odd one far forward and the rest back to nothing.\", \"misconception\": \"Grover's speedup is quadratic (about sqrt(N) oracle queries instead of about N), not exponential.\", \"uncertain\": []}\n"
+      }
+    ],
+    "summary": {
+      "completed_runs": 8,
+      "incomplete": 0,
+      "verified_correct": 8,
+      "stated_final_probabilities": 8,
+      "clean_json": 8,
+      "avg_words": 291
+    }
+  }
+}

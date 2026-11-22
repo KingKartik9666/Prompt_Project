@@ -1,0 +1,49 @@
+{
+  "job": "Vv3_1_1",
+  "kind": "version",
+  "version": "v3",
+  "test_id": "1",
+  "rep": 1,
+  "step": "done",
+  "algo": "grover2",
+  "params": {
+    "marked": "11"
+  },
+  "log": {
+    "explanation_raw": "{\"goal\": \"Find the marked item 11 among the 4 items 00, 01, 10, 11 using only one oracle check.\", \"steps\": [{\"n\": 1, \"action\": \"Start with both qubits as 0. Here |0> is just the column vector [1, 0] and |1> is the column vector [0, 1]; the two-qubit label |00> means both qubits are 0.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits: now all 4 items have the same amplitude 1/2, so each is equally likely (probability 1/4).\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"Ask the oracle once: it flips the sign of the marked item 11 only. Probabilities do not change yet, but 11 is now 'tagged' with a minus sign.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Apply the diffusion step (reflect every amplitude about the average). The amplitudes are 1/2, 1/2, 1/2, -1/2, so the average is 1/4. Each new amplitude = 2 x 1/4 - old amplitude: 00, 01, 10 become 0, and 11 becomes 1/2 + 1/2 = 1.\", \"state\": \"|11>\"}, {\"n\": 5, \"action\": \"Measure both qubits.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0 (amplitude 1, squared) and 00, 01, 10 with probability 0, after just one Grover iteration.\", \"analogy\": \"Like a room of 4 people standing at equal height: the oracle makes the right person crouch down, then everyone mirrors their height around the room's average, so the crouched person shoots up tall and the others drop to the floor.\", \"misconception\": \"Grover's algorithm does not check all items at once and read the answer instantly; its speedup is quadratic (about sqrt(N) oracle checks), not exponential. With exactly 4 items, one iteration happens to give the answer with certainty.\", \"uncertain\": []}",
+    "json_clean": true,
+    "words": 290,
+    "claim": {
+      "algorithm": "grover2",
+      "params": {
+        "marked": "11"
+      },
+      "probabilities": {
+        "00": 0.0,
+        "01": 0.0,
+        "10": 0.0,
+        "11": 1.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "11": 1.0
+      },
+      "mismatches": []
+    }
+  },
+  "calls": [
+    {
+      "step": "EXPL",
+      "attempt": 0,
+      "raw": "{\"goal\": \"Find the marked item 11 among the 4 items 00, 01, 10, 11 using only one oracle check.\", \"steps\": [{\"n\": 1, \"action\": \"Start with both qubits as 0. Here |0> is just the column vector [1, 0] and |1> is the column vector [0, 1]; the two-qubit label |00> means both qubits are 0.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits: now all 4 items have the same amplitude 1/2, so each is equally likely (probability 1/4).\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"Ask the oracle once: it flips the sign of the marked item 11 only. Probabilities do not change yet, but 11 is now 'tagged' with a minus sign.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Apply the diffusion step (reflect every amplitude about the average). The amplitudes are 1/2, 1/2, 1/2, -1/2, so the average is 1/4. Each new amplitude = 2 x 1/4 - old amplitude: 00, 01, 10 become 0, and 11 becomes 1/2 + 1/2 = 1.\", \"state\": \"|11>\"}, {\"n\": 5, \"action\": \"Measure both qubits.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0 (amplitude 1, squared) and 00, 01, 10 with probability 0, after just one Grover iteration.\", \"analogy\": \"Like a room of 4 people standing at equal height: the oracle makes the right person crouch down, then everyone mirrors their height around the room's average, so the crouched person shoots up tall and the others drop to the floor.\", \"misconception\": \"Grover's algorithm does not check all items at once and read the answer instantly; its speedup is quadratic (about sqrt(N) oracle checks), not exponential. With exactly 4 items, one iteration happens to give the answer with certainty.\", \"uncertain\": []}"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"grover2\", \"params\": {\"marked\": \"11\"}, \"probabilities\": {\"00\": 0.0, \"01\": 0.0, \"10\": 0.0, \"11\": 1.0}, \"found_in_text\": true}"
+    }
+  ]
+}

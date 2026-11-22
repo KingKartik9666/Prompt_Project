@@ -1,0 +1,44 @@
+1. Goal of the algorithm
+Grover's algorithm searches an unstructured list for an item that a "checker" (called the oracle) recognises as correct, here the item 11 among the four 2-bit items 00, 01, 10 and 11. It does this by repeatedly boosting the probability of the correct item so that measuring the qubits gives 11 with high probability, using about sqrt(N) checks instead of the roughly N/2 a classical search needs on average.
+
+2. Steps
+We use 2 qubits, because 2 qubits can represent the 4 items. Write the state as a vector of 4 amplitudes in the order (00, 01, 10, 11). The probability of measuring an item is the square of its amplitude.
+
+Step 1 - Start in 00.
+Both qubits begin at 0, so all the amplitude sits on item 00.
+State: (1, 0, 0, 0)
+Probabilities: 00 = 1, all others = 0.
+
+Step 2 - Create an equal superposition (apply a Hadamard gate to each qubit).
+The Hadamard gate spreads each qubit evenly over 0 and 1, so the 4 items now share the amplitude equally.
+State: (1/2, 1/2, 1/2, 1/2)
+Probabilities: each item = (1/2)^2 = 1/4. If we measured now, we would just be guessing.
+
+From here on we also use bra-ket (Dirac) notation: |00> means the basis vector (1,0,0,0), |01> means (0,1,0,0), |10> means (0,0,1,0) and |11> means (0,0,0,1). So the state after Step 2 is
+(1/2)(|00> + |01> + |10> + |11>).
+
+Step 3 - Apply the oracle (mark the answer).
+The oracle flips the sign of the amplitude of the marked item |11> and leaves the others alone. This changes no probability yet, because (-1/2)^2 = 1/4, but it "tags" the answer.
+State: (1/2)(|00> + |01> + |10> - |11>)   i.e. vector (1/2, 1/2, 1/2, -1/2)
+Probabilities: still 1/4 each.
+
+Step 4 - Apply the diffusion operator (inversion about the mean).
+This reflects every amplitude about the average amplitude: new amplitude = 2 x (mean) - (old amplitude).
+Mean = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4.
+For |00>, |01>, |10>: 2(1/4) - 1/2 = 0.
+For |11>: 2(1/4) - (-1/2) = 1.
+State: |11>   i.e. vector (0, 0, 0, 1)
+(In matrix form, the diffusion operator is 2|s><s| - I, where |s> is the equal superposition from Step 2.)
+
+That completes one Grover iteration (oracle + diffusion). The usual rule is to repeat about (pi/4) x sqrt(N) times; for N = 4 this is about 1.57, and exactly 1 iteration is the right number here. Doing a second iteration would actually move the state away from |11> again.
+
+3. Final measurement result with probabilities
+Measure both qubits after Step 4:
+- 11: probability 1 (100%)
+- 00: probability 0
+- 01: probability 0
+- 10: probability 0
+For N = 4 with one marked item, a single iteration gives the answer with certainty on an ideal, noise-free quantum computer; on real hardware, noise will make the probability somewhat less than 1 (the exact value depends on the device, so I cannot give a specific number). For larger N, the success probability after the best number of iterations is high but usually not exactly 1.
+
+4. Common misconception
+Grover's algorithm does not give an exponential speedup: it needs about sqrt(N) oracle queries instead of about N, which is a quadratic speedup, and it does not work by "checking all items at once and reading out the answer".

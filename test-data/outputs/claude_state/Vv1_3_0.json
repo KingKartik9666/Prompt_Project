@@ -1,0 +1,49 @@
+{
+  "job": "Vv1_3_0",
+  "kind": "version",
+  "version": "v1",
+  "test_id": "3",
+  "rep": 0,
+  "step": "done",
+  "algo": "deutsch_jozsa",
+  "params": {
+    "n": 2,
+    "f_kind": "balanced"
+  },
+  "log": {
+    "explanation_raw": "Deutsch-Jozsa on 2 input bits: a worked walkthrough with a balanced function\n\n1. The problem\nYou are given a black-box function f: {0,1}^2 -> {0,1}. You are promised it is either\n- constant (outputs the same value on all 4 inputs), or\n- balanced (outputs 0 on exactly 2 inputs and 1 on the other 2).\nClassically, in the worst case you must query f on 3 of the 4 inputs to be sure (2^(n-1) + 1 queries for n bits). Deutsch-Jozsa decides with certainty using a single quantum query.\n\nFor the walkthrough, take the balanced function\nf(x1, x2) = x1 XOR x2\nTruth table: f(00) = 0, f(01) = 1, f(10) = 1, f(11) = 0. Two zeros, two ones, so it is balanced.\n\n2. The circuit\n- Two input qubits, one ancilla (output) qubit: 3 qubits total.\n- Oracle U_f acts as U_f |x>|y> = |x>|y XOR f(x)>.\n- Steps: prepare |00>|1>, apply H to all three qubits, apply U_f once, apply H to the two input qubits, measure the input qubits.\n\n3. Step-by-step state evolution\n\nStep 0: Initial state\n|psi0> = |00> |1>\n\nStep 1: Hadamard on every qubit\nH|0> = |+> = (|0> + |1>)/sqrt(2), H|1> = |-> = (|0> - |1>)/sqrt(2).\n|psi1> = (1/2)(|00> + |01> + |10> + |11>) ⊗ |->\nThe input register is now a uniform superposition over all 4 inputs.\n\nStep 2: Apply the oracle (phase kickback)\nBecause the ancilla is in |->, applying U_f gives\nU_f |x>|-> = (-1)^f(x) |x>|->\nThe ancilla is unchanged; the function value is \"kicked back\" as a sign on |x>. So\n|psi2> = (1/2) Σ_x (-1)^f(x) |x> ⊗ |->\n\nFor f = x1 XOR x2:\n- x = 00: f = 0, sign +\n- x = 01: f = 1, sign -\n- x = 10: f = 1, sign -\n- x = 11: f = 0, sign +\n|psi2> = (1/2)(|00> - |01> - |10> + |11>) ⊗ |->\n\nFrom here on we can ignore the ancilla. Notice the input register factors:\n(1/2)(|00> - |01> - |10> + |11>) = [(|0> - |1>)/sqrt(2)] ⊗ [(|0> - |1>)/sqrt(2)] = |-> ⊗ |->\n\nStep 3: Hadamard on the two input qubits\nH|-> = |1>, so\n|psi3> = |1> ⊗ |1> = |11>\n\nStep 4: Measure\nThe result is 11 with probability 1.\n\n4. Reading the result\nThe rule: if you measure 00, f is constant; if you measure anything other than 00, f is balanced.\nWe got 11, so f is balanced, after one query to the oracle.\n\n5. Why this always works\nAfter the final Hadamards, the amplitude of |00> is\namp(00) = (1/4) Σ_x (-1)^f(x)\n(In general it is (1/2^n) Σ_x (-1)^f(x).)\n- Constant f: all four signs are the same, so the sum is ±4 and amp(00) = ±1. You see 00 with certainty.\n- Balanced f: two +1 terms and two -1 terms cancel, so the sum is 0 and amp(00) = 0. You never see 00.\nFor our example: (1/4)(+1 - 1 - 1 + 1) = 0. This destructive interference on |00> is the whole trick.\n\n6. A second balanced example for comparison\nTake f(x1, x2) = x1 (outputs 0, 0, 1, 1 on 00, 01, 10, 11).\nAfter the oracle: (1/2)(|00> + |01> - |10> - |11>) = |-> ⊗ |+>.\nAfter H ⊗ H: |1> ⊗ |0> = |10>. Again not 00, so balanced.\nThere are C(4,2) = 6 balanced functions on 2 bits. Each one gives a nonzero output string (which string depends on f), but none of them can ever give 00.\n\n7. Key points to remember\n- The |-> ancilla turns the oracle into a phase oracle (phase kickback).\n- The first Hadamards query all inputs in superposition; the last Hadamards make the amplitudes interfere.\n- Only the 00 outcome matters for the decision: 00 means constant, anything else means balanced.\n- The speedup (1 query vs 2^(n-1) + 1) is against deterministic classical algorithms. A randomized classical algorithm can get the answer with high probability in a few queries, so the advantage is about certainty, and it relies on the promise that f is either constant or balanced.\n",
+    "json_clean": false,
+    "words": 696,
+    "claim": {
+      "algorithm": "deutsch_jozsa",
+      "params": {
+        "n": 2,
+        "f_kind": "balanced"
+      },
+      "probabilities": {
+        "11": 1.0,
+        "00": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "00": 0.0
+      },
+      "mismatches": []
+    }
+  },
+  "calls": [
+    {
+      "step": "EXPL",
+      "attempt": 0,
+      "raw": "Deutsch-Jozsa on 2 input bits: a worked walkthrough with a balanced function\n\n1. The problem\nYou are given a black-box function f: {0,1}^2 -> {0,1}. You are promised it is either\n- constant (outputs the same value on all 4 inputs), or\n- balanced (outputs 0 on exactly 2 inputs and 1 on the other 2).\nClassically, in the worst case you must query f on 3 of the 4 inputs to be sure (2^(n-1) + 1 queries for n bits). Deutsch-Jozsa decides with certainty using a single quantum query.\n\nFor the walkthrough, take the balanced function\nf(x1, x2) = x1 XOR x2\nTruth table: f(00) = 0, f(01) = 1, f(10) = 1, f(11) = 0. Two zeros, two ones, so it is balanced.\n\n2. The circuit\n- Two input qubits, one ancilla (output) qubit: 3 qubits total.\n- Oracle U_f acts as U_f |x>|y> = |x>|y XOR f(x)>.\n- Steps: prepare |00>|1>, apply H to all three qubits, apply U_f once, apply H to the two input qubits, measure the input qubits.\n\n3. Step-by-step state evolution\n\nStep 0: Initial state\n|psi0> = |00> |1>\n\nStep 1: Hadamard on every qubit\nH|0> = |+> = (|0> + |1>)/sqrt(2), H|1> = |-> = (|0> - |1>)/sqrt(2).\n|psi1> = (1/2)(|00> + |01> + |10> + |11>) ⊗ |->\nThe input register is now a uniform superposition over all 4 inputs.\n\nStep 2: Apply the oracle (phase kickback)\nBecause the ancilla is in |->, applying U_f gives\nU_f |x>|-> = (-1)^f(x) |x>|->\nThe ancilla is unchanged; the function value is \"kicked back\" as a sign on |x>. So\n|psi2> = (1/2) Σ_x (-1)^f(x) |x> ⊗ |->\n\nFor f = x1 XOR x2:\n- x = 00: f = 0, sign +\n- x = 01: f = 1, sign -\n- x = 10: f = 1, sign -\n- x = 11: f = 0, sign +\n|psi2> = (1/2)(|00> - |01> - |10> + |11>) ⊗ |->\n\nFrom here on we can ignore the ancilla. Notice the input register factors:\n(1/2)(|00> - |01> - |10> + |11>) = [(|0> - |1>)/sqrt(2)] ⊗ [(|0> - |1>)/sqrt(2)] = |-> ⊗ |->\n\nStep 3: Hadamard on the two input qubits\nH|-> = |1>, so\n|psi3> = |1> ⊗ |1> = |11>\n\nStep 4: Measure\nThe result is 11 with probability 1.\n\n4. Reading the result\nThe rule: if you measure 00, f is constant; if you measure anything other than 00, f is balanced.\nWe got 11, so f is balanced, after one query to the oracle.\n\n5. Why this always works\nAfter the final Hadamards, the amplitude of |00> is\namp(00) = (1/4) Σ_x (-1)^f(x)\n(In general it is (1/2^n) Σ_x (-1)^f(x).)\n- Constant f: all four signs are the same, so the sum is ±4 and amp(00) = ±1. You see 00 with certainty.\n- Balanced f: two +1 terms and two -1 terms cancel, so the sum is 0 and amp(00) = 0. You never see 00.\nFor our example: (1/4)(+1 - 1 - 1 + 1) = 0. This destructive interference on |00> is the whole trick.\n\n6. A second balanced example for comparison\nTake f(x1, x2) = x1 (outputs 0, 0, 1, 1 on 00, 01, 10, 11).\nAfter the oracle: (1/2)(|00> + |01> - |10> - |11>) = |-> ⊗ |+>.\nAfter H ⊗ H: |1> ⊗ |0> = |10>. Again not 00, so balanced.\nThere are C(4,2) = 6 balanced functions on 2 bits. Each one gives a nonzero output string (which string depends on f), but none of them can ever give 00.\n\n7. Key points to remember\n- The |-> ancilla turns the oracle into a phase oracle (phase kickback).\n- The first Hadamards query all inputs in superposition; the last Hadamards make the amplitudes interfere.\n- Only the 00 outcome matters for the decision: 00 means constant, anything else means balanced.\n- The speedup (1 query vs 2^(n-1) + 1) is against deterministic classical algorithms. A randomized classical algorithm can get the answer with high probability in a few queries, so the advantage is about certainty, and it relies on the promise that f is either constant or balanced.\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"deutsch_jozsa\", \"params\": {\"n\": 2, \"f_kind\": \"balanced\"}, \"probabilities\": {\"11\": 1.0, \"00\": 0.0}, \"found_in_text\": true}"
+    }
+  ]
+}

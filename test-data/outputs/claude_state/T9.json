@@ -1,0 +1,133 @@
+{
+  "job": "T9",
+  "kind": "test",
+  "test_id": "9",
+  "step": "done",
+  "attempt": 0,
+  "feedback": "",
+  "log": {
+    "question": "Compare Grover's algorithm and Deutsch-Jozsa. Which one needs fewer queries?",
+    "level": "intermediate",
+    "p1_json_clean": true,
+    "route": {
+      "in_scope": true,
+      "algorithm": "deutsch_jozsa",
+      "params": {
+        "n": 2,
+        "f_kind": "balanced"
+      },
+      "intent": "compare",
+      "false_premise": null,
+      "language": "english",
+      "injection_attempt": false,
+      "reason": "The learner asks to compare query counts of Grover's algorithm and Deutsch-Jozsa, both supported; Deutsch-Jozsa is chosen as the primary algorithm with Grover as the comparison target."
+    },
+    "params_used": {
+      "n": 2,
+      "f_kind": "balanced"
+    },
+    "p2_json_clean_0": true,
+    "explanation": {
+      "goal": "Compare Grover and Deutsch-Jozsa by oracle queries, then use Deutsch-Jozsa with one oracle query to show that a 2-bit function f is balanced.",
+      "steps": [
+        {
+          "n": 1,
+          "action": "Compare the two algorithms. Grover searches for a marked item among N items and needs about (pi/4)sqrt(N) oracle queries, which is a quadratic speedup over classical search. Deutsch-Jozsa decides whether f: {0,1}^n -> {0,1} is constant or balanced and always needs exactly 1 oracle query, while a deterministic classical method needs up to 2^(n-1)+1 queries (3 for n = 2). For N = 4 items (2 qubits), Grover also needs exactly 1 query. So at this size neither one needs fewer queries: both use 1. They solve different problems, so the query counts do not show that one algorithm is better in general.",
+          "state": "No circuit yet: this step only compares the algorithms."
+        },
+        {
+          "n": 2,
+          "action": "Prepare the 2 input qubits in |0> and the ancilla in |1>. Here the balanced function is f(x1 x2) = x1, so f(00) = f(01) = 0 and f(10) = f(11) = 1.",
+          "state": "|00>|1>"
+        },
+        {
+          "n": 3,
+          "action": "Apply the Hadamard gate H = (1/sqrt(2))[[1, 1], [1, -1]] to all three qubits. The inputs become an equal superposition with amplitude 1/2 each, and the ancilla becomes |-> = (|0> - |1>)/sqrt(2).",
+          "state": "(|00> + |01> + |10> + |11>)/2 (x) (|0> - |1>)/sqrt(2)"
+        },
+        {
+          "n": 4,
+          "action": "Apply the oracle U_f|x>|y> = |x>|y XOR f(x)> once. Because the ancilla is |->, phase kickback multiplies each |x> by (-1)^f(x), so the amplitudes of |10> and |11> flip sign. The ancilla does not change.",
+          "state": "(|00> + |01> - |10> - |11>)/2 (x) (|0> - |1>)/sqrt(2)"
+        },
+        {
+          "n": 5,
+          "action": "Rewrite the input register as a product: (|00> + |01> - |10> - |11>)/2 = [(|0> - |1>)/sqrt(2)] (x) [(|0> + |1>)/sqrt(2)] = |-> |+>.",
+          "state": "|->|+> (x) (|0> - |1>)/sqrt(2)"
+        },
+        {
+          "n": 6,
+          "action": "Apply H to each input qubit. H|-> = |1> and H|+> = |0>, so the inputs become |10>. The amplitude of |00> is (1 + 1 - 1 - 1)/4 = 0.",
+          "state": "|10> (x) (|0> - |1>)/sqrt(2)"
+        },
+        {
+          "n": 7,
+          "action": "Measure the 2 input qubits and ignore the ancilla. Any result other than 00 means f is balanced.",
+          "state": "|10> (input qubits), giving amplitude 1 for 10 and 0 for 00, 01 and 11"
+        }
+      ],
+      "final_result": "For the 2 input qubits: P(00) = 0, P(10) = 1, P(01) = 0 and P(11) = 0. Because P(all zeros) = 0, f is balanced, and Deutsch-Jozsa found this with 1 oracle query. On the comparison: for 4 items Grover also needs exactly 1 query, so neither needs fewer here. For large N, Grover needs about (pi/4)sqrt(N) queries, while Deutsch-Jozsa always needs 1, but the two algorithms solve different problems.",
+      "analogy": "",
+      "misconception": "Deutsch-Jozsa's 1 query does not make it 'stronger' than Grover. The two solve different problems. Grover's speedup is quadratic, not exponential. Deutsch-Jozsa's large advantage holds only against deterministic classical algorithms, and a randomized classical algorithm can solve the problem with a few queries and a small chance of error.",
+      "uncertain": []
+    },
+    "p3_json_clean_0": true,
+    "claim": {
+      "algorithm": "deutsch_jozsa",
+      "params": {
+        "n": 2,
+        "f_kind": "balanced"
+      },
+      "probabilities": {
+        "00": 0.0,
+        "01": 0.0,
+        "10": 1.0,
+        "11": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "00": 0.0
+      },
+      "mismatches": []
+    },
+    "verified_attempt_0": true,
+    "practice": {
+      "question": "Run the same n = 2 Deutsch-Jozsa circuit as in the explanation (inputs |00>, ancilla |1>, H on all three qubits, one oracle query, H on the two inputs), but now use the balanced function f(x1 x2) = x2, so f(00) = f(10) = 0 and f(01) = f(11) = 1. Write x1 as the left qubit. (a) Write the input-register state right after the oracle. (b) Write the input-register state after the final Hadamards. (c) Give P(00), P(01), P(10) and P(11), and say what the measurement tells you about f.",
+      "type": "calculation",
+      "hint": "Phase kickback multiplies each |x> by (-1)^f(x); then try to factor the 2-qubit state into a product of |+> and |-> before applying H to each qubit.",
+      "answer_key": "(a) Phase kickback flips the sign of the terms with f(x) = 1, which are |01> and |11>: (|00> - |01> + |10> - |11>)/2 = [(|0> + |1>)/sqrt(2)] (x) [(|0> - |1>)/sqrt(2)] = |+>|->. (b) H|+> = |0> and H|-> = |1>, so the inputs become |01>. Check: the amplitude of |00> is (1 - 1 + 1 - 1)/4 = 0. (c) P(01) = 1 and P(00) = P(10) = P(11) = 0. Because P(00) = 0, f is balanced, found with 1 oracle query. This matches the verified result P(00) = 0.0.",
+      "review": {
+        "answer_correct": true,
+        "level_ok": true,
+        "unambiguous": true,
+        "changes_made": "Changed the function from f = x1 to f = x2 so the question does not reuse the explanation's example. Added the qubit-ordering convention (x1 on the left) so the outcome 01 vs 10 cannot be misread. Checked that P(00) = 0 matches the verified simulator result."
+      }
+    },
+    "p4_json_clean": true
+  },
+  "calls": [
+    {
+      "step": "P1",
+      "attempt": 0,
+      "raw": "{\"in_scope\": true, \"algorithm\": \"deutsch_jozsa\", \"params\": {\"n\": 2, \"f_kind\": \"balanced\"}, \"intent\": \"compare\", \"false_premise\": null, \"language\": \"english\", \"injection_attempt\": false, \"reason\": \"The learner asks to compare query counts of Grover's algorithm and Deutsch-Jozsa, both supported; Deutsch-Jozsa is chosen as the primary algorithm with Grover as the comparison target.\"}"
+    },
+    {
+      "step": "P2",
+      "attempt": 0,
+      "raw": "{\"goal\": \"Compare Grover and Deutsch-Jozsa by oracle queries, then use Deutsch-Jozsa with one oracle query to show that a 2-bit function f is balanced.\",\n \"steps\": [\n  {\"n\": 1, \"action\": \"Compare the two algorithms. Grover searches for a marked item among N items and needs about (pi/4)sqrt(N) oracle queries, which is a quadratic speedup over classical search. Deutsch-Jozsa decides whether f: {0,1}^n -> {0,1} is constant or balanced and always needs exactly 1 oracle query, while a deterministic classical method needs up to 2^(n-1)+1 queries (3 for n = 2). For N = 4 items (2 qubits), Grover also needs exactly 1 query. So at this size neither one needs fewer queries: both use 1. They solve different problems, so the query counts do not show that one algorithm is better in general.\", \"state\": \"No circuit yet: this step only compares the algorithms.\"},\n  {\"n\": 2, \"action\": \"Prepare the 2 input qubits in |0> and the ancilla in |1>. Here the balanced function is f(x1 x2) = x1, so f(00) = f(01) = 0 and f(10) = f(11) = 1.\", \"state\": \"|00>|1>\"},\n  {\"n\": 3, \"action\": \"Apply the Hadamard gate H = (1/sqrt(2))[[1, 1], [1, -1]] to all three qubits. The inputs become an equal superposition with amplitude 1/2 each, and the ancilla becomes |-> = (|0> - |1>)/sqrt(2).\", \"state\": \"(|00> + |01> + |10> + |11>)/2 (x) (|0> - |1>)/sqrt(2)\"},\n  {\"n\": 4, \"action\": \"Apply the oracle U_f|x>|y> = |x>|y XOR f(x)> once. Because the ancilla is |->, phase kickback multiplies each |x> by (-1)^f(x), so the amplitudes of |10> and |11> flip sign. The ancilla does not change.\", \"state\": \"(|00> + |01> - |10> - |11>)/2 (x) (|0> - |1>)/sqrt(2)\"},\n  {\"n\": 5, \"action\": \"Rewrite the input register as a product: (|00> + |01> - |10> - |11>)/2 = [(|0> - |1>)/sqrt(2)] (x) [(|0> + |1>)/sqrt(2)] = |-> |+>.\", \"state\": \"|->|+> (x) (|0> - |1>)/sqrt(2)\"},\n  {\"n\": 6, \"action\": \"Apply H to each input qubit. H|-> = |1> and H|+> = |0>, so the inputs become |10>. The amplitude of |00> is (1 + 1 - 1 - 1)/4 = 0.\", \"state\": \"|10> (x) (|0> - |1>)/sqrt(2)\"},\n  {\"n\": 7, \"action\": \"Measure the 2 input qubits and ignore the ancilla. Any result other than 00 means f is balanced.\", \"state\": \"|10> (input qubits), giving amplitude 1 for 10 and 0 for 00, 01 and 11\"}],\n \"final_result\": \"For the 2 input qubits: P(00) = 0, P(10) = 1, P(01) = 0 and P(11) = 0. Because P(all zeros) = 0, f is balanced, and Deutsch-Jozsa found this with 1 oracle query. On the comparison: for 4 items Grover also needs exactly 1 query, so neither needs fewer here. For large N, Grover needs about (pi/4)sqrt(N) queries, while Deutsch-Jozsa always needs 1, but the two algorithms solve different problems.\",\n \"analogy\": \"\",\n \"misconception\": \"Deutsch-Jozsa's 1 query does not make it 'stronger' than Grover. The two solve different problems. Grover's speedup is quadratic, not exponential. Deutsch-Jozsa's large advantage holds only against deterministic classical algorithms, and a randomized classical algorithm can solve the problem with a few queries and a small chance of error.\",\n \"uncertain\": []}\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"deutsch_jozsa\", \"params\": {\"n\": 2, \"f_kind\": \"balanced\"}, \"probabilities\": {\"00\": 0.0, \"01\": 0.0, \"10\": 1.0, \"11\": 0.0}, \"found_in_text\": true}"
+    },
+    {
+      "step": "P4",
+      "attempt": 0,
+      "raw": "{\"question\": \"Run the same n = 2 Deutsch-Jozsa circuit as in the explanation (inputs |00>, ancilla |1>, H on all three qubits, one oracle query, H on the two inputs), but now use the balanced function f(x1 x2) = x2, so f(00) = f(10) = 0 and f(01) = f(11) = 1. Write x1 as the left qubit. (a) Write the input-register state right after the oracle. (b) Write the input-register state after the final Hadamards. (c) Give P(00), P(01), P(10) and P(11), and say what the measurement tells you about f.\", \"type\": \"calculation\", \"hint\": \"Phase kickback multiplies each |x> by (-1)^f(x); then try to factor the 2-qubit state into a product of |+> and |-> before applying H to each qubit.\", \"answer_key\": \"(a) Phase kickback flips the sign of the terms with f(x) = 1, which are |01> and |11>: (|00> - |01> + |10> - |11>)/2 = [(|0> + |1>)/sqrt(2)] (x) [(|0> - |1>)/sqrt(2)] = |+>|->. (b) H|+> = |0> and H|-> = |1>, so the inputs become |01>. Check: the amplitude of |00> is (1 - 1 + 1 - 1)/4 = 0. (c) P(01) = 1 and P(00) = P(10) = P(11) = 0. Because P(00) = 0, f is balanced, found with 1 oracle query. This matches the verified result P(00) = 0.0.\", \"review\": {\"answer_correct\": true, \"level_ok\": true, \"unambiguous\": true, \"changes_made\": \"Changed the function from f = x1 to f = x2 so the question does not reuse the explanation's example. Added the qubit-ordering convention (x1 on the left) so the outcome 01 vs 10 cannot be misread. Checked that P(00) = 0 matches the verified simulator result.\"}}"
+    }
+  ]
+}

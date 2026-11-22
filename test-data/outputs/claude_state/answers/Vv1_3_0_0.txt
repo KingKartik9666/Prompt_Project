@@ -1,0 +1,73 @@
+Deutsch-Jozsa on 2 input bits: a worked walkthrough with a balanced function
+
+1. The problem
+You are given a black-box function f: {0,1}^2 -> {0,1}. You are promised it is either
+- constant (outputs the same value on all 4 inputs), or
+- balanced (outputs 0 on exactly 2 inputs and 1 on the other 2).
+Classically, in the worst case you must query f on 3 of the 4 inputs to be sure (2^(n-1) + 1 queries for n bits). Deutsch-Jozsa decides with certainty using a single quantum query.
+
+For the walkthrough, take the balanced function
+f(x1, x2) = x1 XOR x2
+Truth table: f(00) = 0, f(01) = 1, f(10) = 1, f(11) = 0. Two zeros, two ones, so it is balanced.
+
+2. The circuit
+- Two input qubits, one ancilla (output) qubit: 3 qubits total.
+- Oracle U_f acts as U_f |x>|y> = |x>|y XOR f(x)>.
+- Steps: prepare |00>|1>, apply H to all three qubits, apply U_f once, apply H to the two input qubits, measure the input qubits.
+
+3. Step-by-step state evolution
+
+Step 0: Initial state
+|psi0> = |00> |1>
+
+Step 1: Hadamard on every qubit
+H|0> = |+> = (|0> + |1>)/sqrt(2), H|1> = |-> = (|0> - |1>)/sqrt(2).
+|psi1> = (1/2)(|00> + |01> + |10> + |11>) ⊗ |->
+The input register is now a uniform superposition over all 4 inputs.
+
+Step 2: Apply the oracle (phase kickback)
+Because the ancilla is in |->, applying U_f gives
+U_f |x>|-> = (-1)^f(x) |x>|->
+The ancilla is unchanged; the function value is "kicked back" as a sign on |x>. So
+|psi2> = (1/2) Σ_x (-1)^f(x) |x> ⊗ |->
+
+For f = x1 XOR x2:
+- x = 00: f = 0, sign +
+- x = 01: f = 1, sign -
+- x = 10: f = 1, sign -
+- x = 11: f = 0, sign +
+|psi2> = (1/2)(|00> - |01> - |10> + |11>) ⊗ |->
+
+From here on we can ignore the ancilla. Notice the input register factors:
+(1/2)(|00> - |01> - |10> + |11>) = [(|0> - |1>)/sqrt(2)] ⊗ [(|0> - |1>)/sqrt(2)] = |-> ⊗ |->
+
+Step 3: Hadamard on the two input qubits
+H|-> = |1>, so
+|psi3> = |1> ⊗ |1> = |11>
+
+Step 4: Measure
+The result is 11 with probability 1.
+
+4. Reading the result
+The rule: if you measure 00, f is constant; if you measure anything other than 00, f is balanced.
+We got 11, so f is balanced, after one query to the oracle.
+
+5. Why this always works
+After the final Hadamards, the amplitude of |00> is
+amp(00) = (1/4) Σ_x (-1)^f(x)
+(In general it is (1/2^n) Σ_x (-1)^f(x).)
+- Constant f: all four signs are the same, so the sum is ±4 and amp(00) = ±1. You see 00 with certainty.
+- Balanced f: two +1 terms and two -1 terms cancel, so the sum is 0 and amp(00) = 0. You never see 00.
+For our example: (1/4)(+1 - 1 - 1 + 1) = 0. This destructive interference on |00> is the whole trick.
+
+6. A second balanced example for comparison
+Take f(x1, x2) = x1 (outputs 0, 0, 1, 1 on 00, 01, 10, 11).
+After the oracle: (1/2)(|00> + |01> - |10> - |11>) = |-> ⊗ |+>.
+After H ⊗ H: |1> ⊗ |0> = |10>. Again not 00, so balanced.
+There are C(4,2) = 6 balanced functions on 2 bits. Each one gives a nonzero output string (which string depends on f), but none of them can ever give 00.
+
+7. Key points to remember
+- The |-> ancilla turns the oracle into a phase oracle (phase kickback).
+- The first Hadamards query all inputs in superposition; the last Hadamards make the amplitudes interfere.
+- Only the 00 outcome matters for the decision: 00 means constant, anything else means balanced.
+- The speedup (1 query vs 2^(n-1) + 1) is against deterministic classical algorithms. A randomized classical algorithm can get the answer with high probability in a few queries, so the advantage is about certainty, and it relies on the promise that f is either constant or balanced.

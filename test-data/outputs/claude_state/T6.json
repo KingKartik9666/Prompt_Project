@@ -1,0 +1,115 @@
+{
+  "job": "T6",
+  "kind": "test",
+  "test_id": "6",
+  "step": "done",
+  "attempt": 0,
+  "feedback": "",
+  "log": {
+    "question": "Why is the Bell state (|00>+|11>)/sqrt(2) called entangled? Show the circuit.",
+    "level": "intermediate",
+    "p1_json_clean": true,
+    "route": {
+      "in_scope": true,
+      "algorithm": "bell",
+      "params": {},
+      "intent": "explain",
+      "false_premise": null,
+      "language": "english",
+      "injection_attempt": false,
+      "reason": "The learner asks why the Bell state (|00>+|11>)/sqrt(2) is entangled and wants the H+CNOT circuit, which is the supported bell algorithm."
+    },
+    "params_used": {},
+    "p2_json_clean_0": true,
+    "explanation": {
+      "goal": "Build the Bell state (|00> + |11>)/sqrt(2) with an H gate and a CNOT, and show why it cannot be split into two separate single-qubit states, which is what 'entangled' means.",
+      "steps": [
+        {
+          "n": 1,
+          "action": "Start with both qubits in |0>, so the amplitudes are 1 for |00> and 0 for |01>, |10>, |11>. This is a product state: |0> on qubit 1 and |0> on qubit 2.",
+          "state": "|00>"
+        },
+        {
+          "n": 2,
+          "action": "Apply the Hadamard gate H = (1/sqrt(2)) [[1, 1], [1, -1]] to the first qubit: |0> -> (|0> + |1>)/sqrt(2). Amplitudes: 1/sqrt(2) for |00> and |10>. This is still a product state: (|0> + |1>)/sqrt(2) on qubit 1 and |0> on qubit 2.",
+          "state": "(|00> + |10>)/sqrt(2)"
+        },
+        {
+          "n": 3,
+          "action": "Apply CNOT with qubit 1 as control and qubit 2 as target. Its matrix in the basis |00>, |01>, |10>, |11> is [[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]]: it flips the target only when the control is |1>. So |00> stays |00> and |10> becomes |11>. Amplitudes: 1/sqrt(2) for |00> and |11>, 0 for |01> and |10>.",
+          "state": "(|00> + |11>)/sqrt(2)"
+        },
+        {
+          "n": 4,
+          "action": "Test whether this state is a product state. Any product state has the form (a|0> + b|1>)(c|0> + d|1>) = ac|00> + ad|01> + bc|10> + bd|11>. Matching the Bell state needs ac = 1/sqrt(2), bd = 1/sqrt(2), ad = 0 and bc = 0. From ad = 0, a = 0 or d = 0, but then ac = 0 or bd = 0, which is a contradiction. So no single-qubit states for qubit 1 and qubit 2 can produce this state: it is entangled.",
+          "state": "(|00> + |11>)/sqrt(2)"
+        },
+        {
+          "n": 5,
+          "action": "See what entanglement means for measurement. Measuring qubit 1 gives 0 or 1 with probability |1/sqrt(2)|^2 = 0.5 each. If the result is 0, the state collapses to |00>; if 1, to |11>. Qubit 2 then always gives the same result as qubit 1. Neither qubit has a definite value of its own before measurement; only the correlation between them is fixed.",
+          "state": "(|00> + |11>)/sqrt(2) before measurement; |00> or |11> after"
+        }
+      ],
+      "final_result": "Circuit: q1: |0> --H--*-- ; q2: |0> -----X-- (H on qubit 1, then CNOT with qubit 1 as control and qubit 2 as target). Final state (|00> + |11>)/sqrt(2). Measuring gives 00 with probability (1/sqrt(2))^2 = 0.5 and 11 with probability 0.5; 01 and 10 have probability 0. It is called entangled because it cannot be written as (state of qubit 1) times (state of qubit 2), so the two results are always perfectly correlated even though each one alone is random.",
+      "analogy": "",
+      "misconception": "Entanglement is not a hidden answer agreed in advance (the qubits also agree when measured in other bases, which pre-agreed values cannot fully explain), and it cannot be used to send messages faster than light, because each qubit's own result is still 50/50 random.",
+      "uncertain": []
+    },
+    "p3_json_clean_0": true,
+    "claim": {
+      "algorithm": "bell",
+      "params": {},
+      "probabilities": {
+        "00": 0.5,
+        "01": 0.0,
+        "10": 0.0,
+        "11": 0.5
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "00": 0.5,
+        "11": 0.5
+      },
+      "mismatches": []
+    },
+    "verified_attempt_0": true,
+    "practice": {
+      "question": "Use the same circuit as in the explanation (H on qubit 1, then CNOT with qubit 1 as control and qubit 2 as target), but start with qubit 2 in |1> instead of |0>, so the input state is |01> (written as |qubit 1 qubit 2>). Give (a) the state after the H gate, (b) the final state after the CNOT, and (c) the probabilities of measuring 00, 01, 10 and 11.",
+      "type": "calculation",
+      "hint": "Apply H to qubit 1 only and leave qubit 2 unchanged, then go term by term: CNOT changes qubit 2 only in the terms where qubit 1 is 1.",
+      "answer_key": "(a) H acts on qubit 1: |0> -> (|0> + |1>)/sqrt(2), so |01> -> (|01> + |11>)/sqrt(2). (b) CNOT leaves |01> unchanged (control is 0) and flips the target in |11> to give |10>, so the final state is (|01> + |10>)/sqrt(2). (c) P(01) = (1/sqrt(2))^2 = 0.5, P(10) = 0.5, P(00) = 0, P(11) = 0. The two qubits now always give opposite results, compared with the verified result {00: 0.5, 11: 0.5} for the |00> input, where they always agree; this state is also entangled.",
+      "review": {
+        "answer_correct": true,
+        "level_ok": true,
+        "unambiguous": true,
+        "changes_made": "Stated the qubit ordering |qubit 1 qubit 2> explicitly so that 01 and 10 cannot be confused, and asked for the intermediate state after H so the student works through each step. Checked the answer against the explanation's H and CNOT rules and against the verified result for the original |00> input."
+      }
+    },
+    "p4_json_clean": true
+  },
+  "calls": [
+    {
+      "step": "P1",
+      "attempt": 0,
+      "raw": "{\"in_scope\": true, \"algorithm\": \"bell\", \"params\": {}, \"intent\": \"explain\", \"false_premise\": null, \"language\": \"english\", \"injection_attempt\": false, \"reason\": \"The learner asks why the Bell state (|00>+|11>)/sqrt(2) is entangled and wants the H+CNOT circuit, which is the supported bell algorithm.\"}"
+    },
+    {
+      "step": "P2",
+      "attempt": 0,
+      "raw": "{\"goal\": \"Build the Bell state (|00> + |11>)/sqrt(2) with an H gate and a CNOT, and show why it cannot be split into two separate single-qubit states, which is what 'entangled' means.\",\n \"steps\": [\n  {\"n\": 1, \"action\": \"Start with both qubits in |0>, so the amplitudes are 1 for |00> and 0 for |01>, |10>, |11>. This is a product state: |0> on qubit 1 and |0> on qubit 2.\", \"state\": \"|00>\"},\n  {\"n\": 2, \"action\": \"Apply the Hadamard gate H = (1/sqrt(2)) [[1, 1], [1, -1]] to the first qubit: |0> -> (|0> + |1>)/sqrt(2). Amplitudes: 1/sqrt(2) for |00> and |10>. This is still a product state: (|0> + |1>)/sqrt(2) on qubit 1 and |0> on qubit 2.\", \"state\": \"(|00> + |10>)/sqrt(2)\"},\n  {\"n\": 3, \"action\": \"Apply CNOT with qubit 1 as control and qubit 2 as target. Its matrix in the basis |00>, |01>, |10>, |11> is [[1,0,0,0],[0,1,0,0],[0,0,0,1],[0,0,1,0]]: it flips the target only when the control is |1>. So |00> stays |00> and |10> becomes |11>. Amplitudes: 1/sqrt(2) for |00> and |11>, 0 for |01> and |10>.\", \"state\": \"(|00> + |11>)/sqrt(2)\"},\n  {\"n\": 4, \"action\": \"Test whether this state is a product state. Any product state has the form (a|0> + b|1>)(c|0> + d|1>) = ac|00> + ad|01> + bc|10> + bd|11>. Matching the Bell state needs ac = 1/sqrt(2), bd = 1/sqrt(2), ad = 0 and bc = 0. From ad = 0, a = 0 or d = 0, but then ac = 0 or bd = 0, which is a contradiction. So no single-qubit states for qubit 1 and qubit 2 can produce this state: it is entangled.\", \"state\": \"(|00> + |11>)/sqrt(2)\"},\n  {\"n\": 5, \"action\": \"See what entanglement means for measurement. Measuring qubit 1 gives 0 or 1 with probability |1/sqrt(2)|^2 = 0.5 each. If the result is 0, the state collapses to |00>; if 1, to |11>. Qubit 2 then always gives the same result as qubit 1. Neither qubit has a definite value of its own before measurement; only the correlation between them is fixed.\", \"state\": \"(|00> + |11>)/sqrt(2) before measurement; |00> or |11> after\"}],\n \"final_result\": \"Circuit: q1: |0> --H--*-- ; q2: |0> -----X-- (H on qubit 1, then CNOT with qubit 1 as control and qubit 2 as target). Final state (|00> + |11>)/sqrt(2). Measuring gives 00 with probability (1/sqrt(2))^2 = 0.5 and 11 with probability 0.5; 01 and 10 have probability 0. It is called entangled because it cannot be written as (state of qubit 1) times (state of qubit 2), so the two results are always perfectly correlated even though each one alone is random.\",\n \"analogy\": \"\",\n \"misconception\": \"Entanglement is not a hidden answer agreed in advance (the qubits also agree when measured in other bases, which pre-agreed values cannot fully explain), and it cannot be used to send messages faster than light, because each qubit's own result is still 50/50 random.\",\n \"uncertain\": []}\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"bell\", \"params\": {}, \"probabilities\": {\"00\": 0.5, \"01\": 0.0, \"10\": 0.0, \"11\": 0.5}, \"found_in_text\": true}"
+    },
+    {
+      "step": "P4",
+      "attempt": 0,
+      "raw": "{\"question\": \"Use the same circuit as in the explanation (H on qubit 1, then CNOT with qubit 1 as control and qubit 2 as target), but start with qubit 2 in |1> instead of |0>, so the input state is |01> (written as |qubit 1 qubit 2>). Give (a) the state after the H gate, (b) the final state after the CNOT, and (c) the probabilities of measuring 00, 01, 10 and 11.\", \"type\": \"calculation\", \"hint\": \"Apply H to qubit 1 only and leave qubit 2 unchanged, then go term by term: CNOT changes qubit 2 only in the terms where qubit 1 is 1.\", \"answer_key\": \"(a) H acts on qubit 1: |0> -> (|0> + |1>)/sqrt(2), so |01> -> (|01> + |11>)/sqrt(2). (b) CNOT leaves |01> unchanged (control is 0) and flips the target in |11> to give |10>, so the final state is (|01> + |10>)/sqrt(2). (c) P(01) = (1/sqrt(2))^2 = 0.5, P(10) = 0.5, P(00) = 0, P(11) = 0. The two qubits now always give opposite results, compared with the verified result {00: 0.5, 11: 0.5} for the |00> input, where they always agree; this state is also entangled.\", \"review\": {\"answer_correct\": true, \"level_ok\": true, \"unambiguous\": true, \"changes_made\": \"Stated the qubit ordering |qubit 1 qubit 2> explicitly so that 01 and 10 cannot be confused, and asked for the intermediate state after H so the student works through each step. Checked the answer against the explanation's H and CNOT rules and against the verified result for the original |00> input.\"}}"
+    }
+  ]
+}

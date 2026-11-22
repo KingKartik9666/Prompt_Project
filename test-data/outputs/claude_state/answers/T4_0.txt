@@ -1,0 +1,1 @@
+{"in_scope": true, "algorithm": "deutsch_jozsa", "params": {"n": 2, "f_kind": "constant0"}, "intent": "explain", "false_premise": null, "language": "english", "injection_attempt": false, "reason": "The learner asks what the Deutsch-Jozsa algorithm outputs for a constant function, a supported algorithm question."}

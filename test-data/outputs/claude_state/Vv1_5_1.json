@@ -1,0 +1,46 @@
+{
+  "job": "Vv1_5_1",
+  "kind": "version",
+  "version": "v1",
+  "test_id": "5",
+  "rep": 1,
+  "step": "done",
+  "algo": "bell",
+  "params": {},
+  "log": {
+    "explanation_raw": "A Bell state is a maximally entangled state of two qubits. The most common one is\n\n|Φ+⟩ = (|00⟩ + |11⟩) / √2\n\nYou create it with a two-gate circuit: a Hadamard gate followed by a CNOT gate.\n\nStep-by-step\n\n1. Start with both qubits in |0⟩:\n   |ψ0⟩ = |00⟩\n\n2. Apply a Hadamard gate (H) to the first qubit (the control). H maps |0⟩ to (|0⟩ + |1⟩)/√2, so:\n   |ψ1⟩ = (H ⊗ I)|00⟩ = (|0⟩ + |1⟩)/√2 ⊗ |0⟩ = (|00⟩ + |10⟩)/√2\n   The first qubit is now in an equal superposition, but the two qubits are still independent (a product state).\n\n3. Apply a CNOT gate with qubit 1 as control and qubit 2 as target. CNOT flips the target only when the control is |1⟩:\n   |00⟩ -> |00⟩\n   |10⟩ -> |11⟩\n   So:\n   |ψ2⟩ = (|00⟩ + |11⟩)/√2 = |Φ+⟩\n\nCircuit diagram:\n\nq0: |0⟩ ──H──●──\n             │\nq1: |0⟩ ─────X──\n\nWhy this is entangled\n\nThe final state cannot be written as a product (a|0⟩ + b|1⟩) ⊗ (c|0⟩ + d|1⟩). If it could, you would need ac = 1/√2, bd = 1/√2 and ad = bc = 0, which is impossible. Physically, if you measure the two qubits in the computational basis you get 00 or 11, each with probability 1/2, and never 01 or 10. Each qubit alone looks completely random, but the outcomes are perfectly correlated.\n\nThe other three Bell states\n\nChanging the starting input of the same H + CNOT circuit gives the full Bell basis:\n\n- Input |00⟩ -> |Φ+⟩ = (|00⟩ + |11⟩)/√2\n- Input |01⟩ -> |Ψ+⟩ = (|01⟩ + |10⟩)/√2\n- Input |10⟩ -> |Φ−⟩ = (|00⟩ − |11⟩)/√2\n- Input |11⟩ -> |Ψ−⟩ = (|01⟩ − |10⟩)/√2\n\nEquivalently, you can make |Φ+⟩ and then apply X and/or Z to one qubit to reach the others (X gives Ψ+, Z gives Φ−, and both give Ψ− up to a global phase).\n\nExample in Qiskit\n\nfrom qiskit import QuantumCircuit\n\nqc = QuantumCircuit(2, 2)\nqc.h(0)        # superposition on qubit 0\nqc.cx(0, 1)    # entangle qubit 0 with qubit 1\nqc.measure([0, 1], [0, 1])\n\nRunning this many times should give roughly 50% \"00\" and 50% \"11\".\n\nReversing it\n\nRunning the circuit backwards (CNOT, then H on the first qubit) maps each Bell state back to a distinct computational basis state. This is called a Bell measurement, and it is used in quantum teleportation and superdense coding.\n",
+    "json_clean": false,
+    "words": 401,
+    "claim": {
+      "algorithm": "bell",
+      "params": {},
+      "probabilities": {
+        "00": 0.5,
+        "11": 0.5,
+        "01": 0.0,
+        "10": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "00": 0.5,
+        "11": 0.5
+      },
+      "mismatches": []
+    }
+  },
+  "calls": [
+    {
+      "step": "EXPL",
+      "attempt": 0,
+      "raw": "A Bell state is a maximally entangled state of two qubits. The most common one is\n\n|Φ+⟩ = (|00⟩ + |11⟩) / √2\n\nYou create it with a two-gate circuit: a Hadamard gate followed by a CNOT gate.\n\nStep-by-step\n\n1. Start with both qubits in |0⟩:\n   |ψ0⟩ = |00⟩\n\n2. Apply a Hadamard gate (H) to the first qubit (the control). H maps |0⟩ to (|0⟩ + |1⟩)/√2, so:\n   |ψ1⟩ = (H ⊗ I)|00⟩ = (|0⟩ + |1⟩)/√2 ⊗ |0⟩ = (|00⟩ + |10⟩)/√2\n   The first qubit is now in an equal superposition, but the two qubits are still independent (a product state).\n\n3. Apply a CNOT gate with qubit 1 as control and qubit 2 as target. CNOT flips the target only when the control is |1⟩:\n   |00⟩ -> |00⟩\n   |10⟩ -> |11⟩\n   So:\n   |ψ2⟩ = (|00⟩ + |11⟩)/√2 = |Φ+⟩\n\nCircuit diagram:\n\nq0: |0⟩ ──H──●──\n             │\nq1: |0⟩ ─────X──\n\nWhy this is entangled\n\nThe final state cannot be written as a product (a|0⟩ + b|1⟩) ⊗ (c|0⟩ + d|1⟩). If it could, you would need ac = 1/√2, bd = 1/√2 and ad = bc = 0, which is impossible. Physically, if you measure the two qubits in the computational basis you get 00 or 11, each with probability 1/2, and never 01 or 10. Each qubit alone looks completely random, but the outcomes are perfectly correlated.\n\nThe other three Bell states\n\nChanging the starting input of the same H + CNOT circuit gives the full Bell basis:\n\n- Input |00⟩ -> |Φ+⟩ = (|00⟩ + |11⟩)/√2\n- Input |01⟩ -> |Ψ+⟩ = (|01⟩ + |10⟩)/√2\n- Input |10⟩ -> |Φ−⟩ = (|00⟩ − |11⟩)/√2\n- Input |11⟩ -> |Ψ−⟩ = (|01⟩ − |10⟩)/√2\n\nEquivalently, you can make |Φ+⟩ and then apply X and/or Z to one qubit to reach the others (X gives Ψ+, Z gives Φ−, and both give Ψ− up to a global phase).\n\nExample in Qiskit\n\nfrom qiskit import QuantumCircuit\n\nqc = QuantumCircuit(2, 2)\nqc.h(0)        # superposition on qubit 0\nqc.cx(0, 1)    # entangle qubit 0 with qubit 1\nqc.measure([0, 1], [0, 1])\n\nRunning this many times should give roughly 50% \"00\" and 50% \"11\".\n\nReversing it\n\nRunning the circuit backwards (CNOT, then H on the first qubit) maps each Bell state back to a distinct computational basis state. This is called a Bell measurement, and it is used in quantum teleportation and superdense coding.\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"bell\", \"params\": {}, \"probabilities\": {\"00\": 0.5, \"11\": 0.5, \"01\": 0.0, \"10\": 0.0}, \"found_in_text\": true}"
+    }
+  ]
+}

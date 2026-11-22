@@ -1,0 +1,31 @@
+{
+  "job": "T12",
+  "kind": "test",
+  "test_id": "12",
+  "step": "done",
+  "attempt": 0,
+  "feedback": "",
+  "log": {
+    "question": "idk",
+    "level": "beginner",
+    "p1_json_clean": true,
+    "route": {
+      "in_scope": false,
+      "algorithm": "out_of_scope",
+      "params": {},
+      "intent": "clarify",
+      "false_premise": null,
+      "language": "english",
+      "injection_attempt": false,
+      "reason": "The message 'idk' carries no meaningful question or reference to quantum computing, so it cannot be mapped to any algorithm."
+    },
+    "final": "I can help with quantum algorithms (Bell states, Deutsch-Jozsa, Grover). Please ask a question about one of them."
+  },
+  "calls": [
+    {
+      "step": "P1",
+      "attempt": 0,
+      "raw": "{\"in_scope\": false, \"algorithm\": \"out_of_scope\", \"params\": {}, \"intent\": \"clarify\", \"false_premise\": null, \"language\": \"english\", \"injection_attempt\": false, \"reason\": \"The message 'idk' carries no meaningful question or reference to quantum computing, so it cannot be mapped to any algorithm.\"}"
+    }
+  ]
+}

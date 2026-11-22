@@ -1,0 +1,49 @@
+{
+  "job": "Vv2_7_0",
+  "kind": "version",
+  "version": "v2",
+  "test_id": "7",
+  "rep": 0,
+  "step": "done",
+  "algo": "grover2",
+  "params": {
+    "marked": "11"
+  },
+  "log": {
+    "explanation_raw": "1. Goal of the algorithm\nGrover's algorithm finds one \"marked\" item in an unsorted list of N items, where the only way to recognise the item is to ask a black-box checker (\"oracle\") whether a given item is the right one. It does this with about (pi/4) x sqrt(N) oracle queries instead of the roughly N queries a classical computer needs, which is a quadratic speedup, not an exponential one.\n\n2. Steps\nSetup: 4 items need 2 qubits, because 2 qubits can represent 4 labels: 00, 01, 10, 11. We describe the 2-qubit state as a vector of 4 amplitudes, written in the order [00, 01, 10, 11]. The probability of measuring a label is the square of its amplitude. Suppose the marked item is 11 (the algorithm does not know this; only the oracle does).\n\nStep 1 - Initialise both qubits to 0.\nState: [1, 0, 0, 0]\n(All amplitude is on label 00.)\n\nStep 2 - Apply a Hadamard gate to each qubit to create an equal superposition.\nState: [1/2, 1/2, 1/2, 1/2]\n(Each label has probability (1/2)^2 = 1/4. Measuring now would be no better than a random guess.)\n\nStep 3 - Apply the oracle. It flips the sign of the amplitude of the marked item and leaves the others unchanged.\nState: [1/2, 1/2, 1/2, -1/2]\n(Probabilities are still all 1/4, because squaring removes the sign. The information is hidden in the phase.)\n\nStep 4 - Apply the diffusion operator (\"inversion about the mean\"). Each amplitude a is replaced by 2 x mean - a.\nMean of the amplitudes = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4.\nUnmarked items: 2 x 1/4 - 1/2 = 0\nMarked item: 2 x 1/4 - (-1/2) = 1\nState: [0, 0, 0, 1]\n(Steps 3 and 4 together form one \"Grover iteration\". For N = 4, the optimal number of iterations is exactly 1, which matches (pi/4) x sqrt(4) = about 1.57, rounded down to 1.)\n\n3. Final measurement result with probabilities\nUsing bra-ket notation now: the final state is |11>, i.e. 0|00> + 0|01> + 0|10> + 1|11>.\nP(00) = 0\nP(01) = 0\nP(10) = 0\nP(11) = 1\nSo, on an ideal noiseless quantum computer, measuring gives the marked item 11 with probability 100% after a single oracle query. A classical algorithm needs on average 2.25 queries for 4 items (up to 3 in the worst case, since if the first 3 checks fail, the 4th item must be the answer). For N = 4 the success probability being exactly 1 is a special case. For larger N, Grover's success probability is high but generally not exactly 1, and on real noisy hardware it will be lower.\n\n4. Common misconception\nGrover's algorithm is often said to give an exponential speedup, but its speedup is only quadratic (O(sqrt(N)) versus O(N)), and it is proven that no quantum algorithm can search an unstructured list faster than that.\n",
+    "json_clean": false,
+    "words": 492,
+    "claim": {
+      "algorithm": "grover2",
+      "params": {
+        "marked": "11"
+      },
+      "probabilities": {
+        "00": 0.0,
+        "01": 0.0,
+        "10": 0.0,
+        "11": 1.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "11": 1.0
+      },
+      "mismatches": []
+    }
+  },
+  "calls": [
+    {
+      "step": "EXPL",
+      "attempt": 0,
+      "raw": "1. Goal of the algorithm\nGrover's algorithm finds one \"marked\" item in an unsorted list of N items, where the only way to recognise the item is to ask a black-box checker (\"oracle\") whether a given item is the right one. It does this with about (pi/4) x sqrt(N) oracle queries instead of the roughly N queries a classical computer needs, which is a quadratic speedup, not an exponential one.\n\n2. Steps\nSetup: 4 items need 2 qubits, because 2 qubits can represent 4 labels: 00, 01, 10, 11. We describe the 2-qubit state as a vector of 4 amplitudes, written in the order [00, 01, 10, 11]. The probability of measuring a label is the square of its amplitude. Suppose the marked item is 11 (the algorithm does not know this; only the oracle does).\n\nStep 1 - Initialise both qubits to 0.\nState: [1, 0, 0, 0]\n(All amplitude is on label 00.)\n\nStep 2 - Apply a Hadamard gate to each qubit to create an equal superposition.\nState: [1/2, 1/2, 1/2, 1/2]\n(Each label has probability (1/2)^2 = 1/4. Measuring now would be no better than a random guess.)\n\nStep 3 - Apply the oracle. It flips the sign of the amplitude of the marked item and leaves the others unchanged.\nState: [1/2, 1/2, 1/2, -1/2]\n(Probabilities are still all 1/4, because squaring removes the sign. The information is hidden in the phase.)\n\nStep 4 - Apply the diffusion operator (\"inversion about the mean\"). Each amplitude a is replaced by 2 x mean - a.\nMean of the amplitudes = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4.\nUnmarked items: 2 x 1/4 - 1/2 = 0\nMarked item: 2 x 1/4 - (-1/2) = 1\nState: [0, 0, 0, 1]\n(Steps 3 and 4 together form one \"Grover iteration\". For N = 4, the optimal number of iterations is exactly 1, which matches (pi/4) x sqrt(4) = about 1.57, rounded down to 1.)\n\n3. Final measurement result with probabilities\nUsing bra-ket notation now: the final state is |11>, i.e. 0|00> + 0|01> + 0|10> + 1|11>.\nP(00) = 0\nP(01) = 0\nP(10) = 0\nP(11) = 1\nSo, on an ideal noiseless quantum computer, measuring gives the marked item 11 with probability 100% after a single oracle query. A classical algorithm needs on average 2.25 queries for 4 items (up to 3 in the worst case, since if the first 3 checks fail, the 4th item must be the answer). For N = 4 the success probability being exactly 1 is a special case. For larger N, Grover's success probability is high but generally not exactly 1, and on real noisy hardware it will be lower.\n\n4. Common misconception\nGrover's algorithm is often said to give an exponential speedup, but its speedup is only quadratic (O(sqrt(N)) versus O(N)), and it is proven that no quantum algorithm can search an unstructured list faster than that.\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"grover2\", \"params\": {\"marked\": \"11\"}, \"probabilities\": {\"00\": 0.0, \"01\": 0.0, \"10\": 0.0, \"11\": 1.0}, \"found_in_text\": true}"
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+Not quite. Grover's algorithm gives a quadratic speedup, not an exponential one.
+
+Speedup
+- Classical unstructured search over N items needs about N/2 oracle queries on average (N in the worst case).
+- Grover's algorithm needs about (pi/4)·sqrt(N) queries. That is O(sqrt(N)) versus O(N): a quadratic improvement.
+- This is provably optimal: no quantum algorithm can search an unstructured list with fewer than about sqrt(N) queries (Bennett, Bernstein, Brassard and Vazirani, 1997). So an exponential speedup for unstructured search is impossible. Exponential speedups (as in Shor's algorithm) come from exploiting special structure in the problem, which plain search does not have.
+
+How it works for 4 items (N = 4, 2 qubits)
+Label the items 00, 01, 10, 11 and suppose the marked item is 11.
+
+1. Start in |00> and apply a Hadamard to each qubit, giving the uniform superposition
+   |s> = 1/2 (|00> + |01> + |10> + |11>).
+   Every amplitude is 1/2, so each item has probability 1/4.
+
+2. Oracle: flip the sign of the marked item's amplitude.
+   1/2 (|00> + |01> + |10> - |11>)
+   Amplitudes: (1/2, 1/2, 1/2, -1/2). The probabilities are unchanged; only the phase is marked.
+
+3. Diffusion operator (inversion about the mean), D = 2|s><s| - I:
+   - Mean amplitude = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4.
+   - Each new amplitude = 2·mean - old amplitude:
+     unmarked: 2(1/4) - 1/2 = 0
+     marked:   2(1/4) - (-1/2) = 1
+   The state is now exactly |11>.
+
+4. Measure: you get 11 with probability 1, after a single oracle query.
+
+Geometric picture: the state lives in a 2D plane spanned by the marked state and the uniform superposition of unmarked states. The initial state makes an angle theta with the unmarked direction, where sin(theta) = 1/sqrt(N) = 1/2, so theta = 30 degrees. Each Grover iteration (oracle + diffusion) is two reflections, which together rotate the state by 2·theta = 60 degrees toward the marked state. Starting at 30 degrees, one iteration lands at 90 degrees: exactly the marked item. For N = 4 this works out perfectly; for general N you do about (pi/4)·sqrt(N) iterations and the success probability is close to, but not exactly, 1. Doing too many iterations overshoots and lowers the probability again.
+
+Comparison for N = 4
+- Classical: 2.25 queries on average to find the item, and 3 in the worst case (if the first three checks miss, the last one must be it).
+- Grover: 1 query, with certainty.
+
+So the 4-item case is a clean illustration, but the general advantage grows only as sqrt(N): for a million items, about 785 Grover iterations versus about 500,000 classical checks on average. That is a big gain, but it is quadratic, not exponential.

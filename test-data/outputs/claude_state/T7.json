@@ -1,0 +1,120 @@
+{
+  "job": "T7",
+  "kind": "test",
+  "test_id": "7",
+  "step": "done",
+  "attempt": 0,
+  "feedback": "",
+  "log": {
+    "question": "Grover gives exponential speedup over classical search, right? Explain how it works for 4 items.",
+    "level": "beginner",
+    "p1_json_clean": true,
+    "route": {
+      "in_scope": true,
+      "algorithm": "grover2",
+      "params": {
+        "marked": "11"
+      },
+      "intent": "explain",
+      "false_premise": "The learner believes Grover's algorithm gives an exponential speedup over classical search, but it gives only a quadratic speedup (about sqrt(N) queries instead of N).",
+      "language": "english",
+      "injection_attempt": false,
+      "reason": "The learner asks how Grover search works for 4 items (2 qubits), which maps to grover2 with the default marked state, and holds a false belief about the speedup."
+    },
+    "params_used": {
+      "marked": "11"
+    },
+    "p2_json_clean_0": true,
+    "explanation": {
+      "goal": "Find the marked item 11 among 4 items using only one question to the oracle.",
+      "steps": [
+        {
+          "n": 1,
+          "action": "First a small correction: Grover's algorithm does not give an exponential speedup. It gives a quadratic speedup: about sqrt(N) oracle questions instead of about N for a classical search. For 4 items that means 1 question instead of up to 3. Now we start with both qubits as 0. A single qubit's 0 and 1 are just the column vectors |0> = [1, 0] and |1> = [0, 1].",
+          "state": "|00>"
+        },
+        {
+          "n": 2,
+          "action": "Apply H to both qubits: now all 4 items are in an equal mix, each with amplitude 1/2.",
+          "state": "(|00> + |01> + |10> + |11>)/2"
+        },
+        {
+          "n": 3,
+          "action": "Ask the oracle once: it marks the item 11 by flipping the sign of its amplitude (from +1/2 to -1/2). The probabilities do not change yet.",
+          "state": "(|00> + |01> + |10> - |11>)/2"
+        },
+        {
+          "n": 4,
+          "action": "Apply the diffusion step (reflect every amplitude about the average). The average is (1/2 + 1/2 + 1/2 - 1/2)/4 = 1/4. Each new amplitude is 2 x 1/4 minus the old one: 00, 01 and 10 become 1/2 - 1/2 = 0, and 11 becomes 1/2 + 1/2 = 1.",
+          "state": "|11>"
+        },
+        {
+          "n": 5,
+          "action": "Measure both qubits.",
+          "state": "|11>"
+        }
+      ],
+      "final_result": "Measuring gives 11 with probability 1.0, and 00, 01, 10 each with probability 0. One oracle query was enough for 4 items; in general Grover needs about sqrt(N) queries, a quadratic (not exponential) speedup.",
+      "analogy": "Like a quiz host who secretly turns the right answer card upside down, and then a trick that takes height away from the normal cards and gives it to the upside-down one, until only that card is left standing.",
+      "misconception": "Grover's speedup is quadratic (about sqrt(N) queries instead of N), not exponential. For a million items it needs about 1,000 queries instead of up to a million, which is a big gain but not an exponential one.",
+      "uncertain": []
+    },
+    "p3_json_clean_0": true,
+    "claim": {
+      "algorithm": "grover2",
+      "params": {
+        "marked": "11"
+      },
+      "probabilities": {
+        "11": 1.0,
+        "00": 0.0,
+        "01": 0.0,
+        "10": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "11": 1.0
+      },
+      "mismatches": []
+    },
+    "verified_attempt_0": true,
+    "practice": {
+      "question": "Suppose the oracle marks the item 01 instead of 11. Starting from the equal mix (|00> + |01> + |10> + |11>)/2 after the H gates, what is the state right after the single oracle question (step 3), and do the measurement probabilities change at this point?",
+      "type": "calculation",
+      "hint": "The oracle changes only the sign of the marked item's amplitude and leaves every other amplitude as it was.",
+      "answer_key": "The state becomes (|00> - |01> + |10> + |11>)/2: the amplitude of 01 flips from +1/2 to -1/2 and the others stay +1/2. The probabilities do not change yet; each item still has probability (1/2)^2 = 1/4, because squaring removes the sign. Only the diffusion step afterwards moves the probability onto 01.",
+      "review": {
+        "answer_correct": true,
+        "level_ok": true,
+        "unambiguous": true,
+        "changes_made": "Changed the marked item from 11 to 01 so the question does not reuse the explanation's example, and limited it to the single oracle step to keep it at beginner level. Added 'starting from the equal mix' so the step being asked about is clear. The answer follows the same sign-flip rule as step 3 and is consistent with the verified result, where 11 is found with probability 1.0 by the same process."
+      }
+    },
+    "p4_json_clean": true
+  },
+  "calls": [
+    {
+      "step": "P1",
+      "attempt": 0,
+      "raw": "{\"in_scope\": true, \"algorithm\": \"grover2\", \"params\": {\"marked\": \"11\"}, \"intent\": \"explain\", \"false_premise\": \"The learner believes Grover's algorithm gives an exponential speedup over classical search, but it gives only a quadratic speedup (about sqrt(N) queries instead of N).\", \"language\": \"english\", \"injection_attempt\": false, \"reason\": \"The learner asks how Grover search works for 4 items (2 qubits), which maps to grover2 with the default marked state, and holds a false belief about the speedup.\"}"
+    },
+    {
+      "step": "P2",
+      "attempt": 0,
+      "raw": "{\"goal\": \"Find the marked item 11 among 4 items using only one question to the oracle.\", \"steps\": [{\"n\": 1, \"action\": \"First a small correction: Grover's algorithm does not give an exponential speedup. It gives a quadratic speedup: about sqrt(N) oracle questions instead of about N for a classical search. For 4 items that means 1 question instead of up to 3. Now we start with both qubits as 0. A single qubit's 0 and 1 are just the column vectors |0> = [1, 0] and |1> = [0, 1].\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits: now all 4 items are in an equal mix, each with amplitude 1/2.\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"Ask the oracle once: it marks the item 11 by flipping the sign of its amplitude (from +1/2 to -1/2). The probabilities do not change yet.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Apply the diffusion step (reflect every amplitude about the average). The average is (1/2 + 1/2 + 1/2 - 1/2)/4 = 1/4. Each new amplitude is 2 x 1/4 minus the old one: 00, 01 and 10 become 1/2 - 1/2 = 0, and 11 becomes 1/2 + 1/2 = 1.\", \"state\": \"|11>\"}, {\"n\": 5, \"action\": \"Measure both qubits.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0, and 00, 01, 10 each with probability 0. One oracle query was enough for 4 items; in general Grover needs about sqrt(N) queries, a quadratic (not exponential) speedup.\", \"analogy\": \"Like a quiz host who secretly turns the right answer card upside down, and then a trick that takes height away from the normal cards and gives it to the upside-down one, until only that card is left standing.\", \"misconception\": \"Grover's speedup is quadratic (about sqrt(N) queries instead of N), not exponential. For a million items it needs about 1,000 queries instead of up to a million, which is a big gain but not an exponential one.\", \"uncertain\": []}\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"grover2\", \"params\": {\"marked\": \"11\"}, \"probabilities\": {\"11\": 1.0, \"00\": 0.0, \"01\": 0.0, \"10\": 0.0}, \"found_in_text\": true}"
+    },
+    {
+      "step": "P4",
+      "attempt": 0,
+      "raw": "{\"question\": \"Suppose the oracle marks the item 01 instead of 11. Starting from the equal mix (|00> + |01> + |10> + |11>)/2 after the H gates, what is the state right after the single oracle question (step 3), and do the measurement probabilities change at this point?\", \"type\": \"calculation\", \"hint\": \"The oracle changes only the sign of the marked item's amplitude and leaves every other amplitude as it was.\", \"answer_key\": \"The state becomes (|00> - |01> + |10> + |11>)/2: the amplitude of 01 flips from +1/2 to -1/2 and the others stay +1/2. The probabilities do not change yet; each item still has probability (1/2)^2 = 1/4, because squaring removes the sign. Only the diffusion step afterwards moves the probability onto 01.\", \"review\": {\"answer_correct\": true, \"level_ok\": true, \"unambiguous\": true, \"changes_made\": \"Changed the marked item from 11 to 01 so the question does not reuse the explanation's example, and limited it to the single oracle step to keep it at beginner level. Added 'starting from the equal mix' so the step being asked about is clear. The answer follows the same sign-flip rule as step 3 and is consistent with the verified result, where 11 is found with probability 1.0 by the same process.\"}}"
+    }
+  ]
+}

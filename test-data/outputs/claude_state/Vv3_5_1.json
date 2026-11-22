@@ -1,0 +1,46 @@
+{
+  "job": "Vv3_5_1",
+  "kind": "version",
+  "version": "v3",
+  "test_id": "5",
+  "rep": 1,
+  "step": "done",
+  "algo": "bell",
+  "params": {},
+  "log": {
+    "explanation_raw": "{\"goal\": \"Make two qubits that are linked so that measuring them always gives the same result (both 0 or both 1).\", \"steps\": [{\"n\": 1, \"action\": \"Start with both qubits as 0. A single qubit 0 is the column vector |0> = [1, 0] and 1 is |1> = [0, 1]; we write the pair of qubits as |00>.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply the Hadamard gate H to the first qubit. It turns |0> into an equal mix (|0> + |1>)/sqrt(2), so the first qubit is now half 0 and half 1, while the second stays 0.\", \"state\": \"(|00> + |10>)/sqrt(2)\"}, {\"n\": 3, \"action\": \"Apply CNOT with the first qubit as control and the second as target: flip the second qubit only when the first is 1. |00> stays |00>, and |10> becomes |11>.\", \"state\": \"(|00> + |11>)/sqrt(2)\"}, {\"n\": 4, \"action\": \"Measure both qubits. Each part has amplitude 1/sqrt(2), so each outcome has probability (1/sqrt(2))^2 = 0.5.\", \"state\": \"(|00> + |11>)/sqrt(2) before measurement; after measurement either |00> or |11>\"}], \"final_result\": \"The Bell state (|00> + |11>)/sqrt(2) is created by H on the first qubit followed by CNOT. Measuring gives 00 with probability 0.5 and 11 with probability 0.5; never 01 or 10.\", \"analogy\": \"Like two magic coins that are always flipped together: each lands heads or tails at random, but both always show the same side.\", \"misconception\": \"Entanglement does not let you send messages faster than light, because each person alone just sees random 0s and 1s.\", \"uncertain\": []}",
+    "json_clean": true,
+    "words": 250,
+    "claim": {
+      "algorithm": "bell",
+      "params": {},
+      "probabilities": {
+        "00": 0.5,
+        "11": 0.5,
+        "01": 0.0,
+        "10": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "00": 0.5,
+        "11": 0.5
+      },
+      "mismatches": []
+    }
+  },
+  "calls": [
+    {
+      "step": "EXPL",
+      "attempt": 0,
+      "raw": "{\"goal\": \"Make two qubits that are linked so that measuring them always gives the same result (both 0 or both 1).\", \"steps\": [{\"n\": 1, \"action\": \"Start with both qubits as 0. A single qubit 0 is the column vector |0> = [1, 0] and 1 is |1> = [0, 1]; we write the pair of qubits as |00>.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply the Hadamard gate H to the first qubit. It turns |0> into an equal mix (|0> + |1>)/sqrt(2), so the first qubit is now half 0 and half 1, while the second stays 0.\", \"state\": \"(|00> + |10>)/sqrt(2)\"}, {\"n\": 3, \"action\": \"Apply CNOT with the first qubit as control and the second as target: flip the second qubit only when the first is 1. |00> stays |00>, and |10> becomes |11>.\", \"state\": \"(|00> + |11>)/sqrt(2)\"}, {\"n\": 4, \"action\": \"Measure both qubits. Each part has amplitude 1/sqrt(2), so each outcome has probability (1/sqrt(2))^2 = 0.5.\", \"state\": \"(|00> + |11>)/sqrt(2) before measurement; after measurement either |00> or |11>\"}], \"final_result\": \"The Bell state (|00> + |11>)/sqrt(2) is created by H on the first qubit followed by CNOT. Measuring gives 00 with probability 0.5 and 11 with probability 0.5; never 01 or 10.\", \"analogy\": \"Like two magic coins that are always flipped together: each lands heads or tails at random, but both always show the same side.\", \"misconception\": \"Entanglement does not let you send messages faster than light, because each person alone just sees random 0s and 1s.\", \"uncertain\": []}"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"bell\", \"params\": {}, \"probabilities\": {\"00\": 0.5, \"11\": 0.5, \"01\": 0.0, \"10\": 0.0}, \"found_in_text\": true}"
+    }
+  ]
+}

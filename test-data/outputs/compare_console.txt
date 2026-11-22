@@ -1,0 +1,17 @@
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 10s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 30s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 10s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 30s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 60s
+v1 3 0 ERROR ClientError("429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current q
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 10s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 30s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 60s
+v1 3 1 ERROR ClientError("429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current q
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 10s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 30s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 60s
+v1 3 2 ERROR ClientError("429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current q
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 10s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 30s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 60s

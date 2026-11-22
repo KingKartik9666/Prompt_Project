@@ -1,0 +1,46 @@
+{
+  "job": "Vv1_5_0",
+  "kind": "version",
+  "version": "v1",
+  "test_id": "5",
+  "rep": 0,
+  "step": "done",
+  "algo": "bell",
+  "params": {},
+  "log": {
+    "explanation_raw": "A Bell state is a maximally entangled state of two qubits. The most common one is\n\n|Phi+> = (|00> + |11>) / sqrt(2)\n\nYou can create it with just two gates: a Hadamard (H) followed by a CNOT.\n\nStep-by-step\n\n1. Start with both qubits in |0>:\n   |psi0> = |0>|0> = |00>\n\n2. Apply a Hadamard gate to the first qubit (the control). H maps |0> to (|0> + |1>)/sqrt(2), so:\n   |psi1> = (|0> + |1>)/sqrt(2) ⊗ |0> = (|00> + |10>) / sqrt(2)\n   The first qubit is now in an equal superposition, but the two qubits are still not entangled; the state can still be written as a product of two single-qubit states.\n\n3. Apply a CNOT gate with qubit 1 as control and qubit 2 as target. CNOT flips the target only when the control is |1>:\n   |00> -> |00>\n   |10> -> |11>\n   so\n   |psi2> = (|00> + |11>) / sqrt(2) = |Phi+>\n\nThis final state cannot be written as a product of two single-qubit states, which is what makes it entangled. If you measure either qubit, you get 0 or 1 with 50% probability each, but the two results always agree: measuring 0 on one qubit means the other is 0, and measuring 1 means the other is 1.\n\nCircuit diagram\n\nq0: |0> --[H]--●--\n               |\nq1: |0> -------⊕--\n\nGetting the other three Bell states\n\nThere are four Bell states in total. You get them by changing the starting input (or, equivalently, adding X and/or Z gates):\n\n- Input |00> -> |Phi+> = (|00> + |11>) / sqrt(2)\n- Input |01> -> |Psi+> = (|01> + |10>) / sqrt(2)\n- Input |10> -> |Phi-> = (|00> - |11>) / sqrt(2)\n- Input |11> -> |Psi-> = (|01> - |10>) / sqrt(2)\n\nIn general, the H + CNOT circuit acting on input |a b> produces\n(|0 b> + (-1)^a |1 (NOT b)>) / sqrt(2).\n\nExample in Qiskit\n\nfrom qiskit import QuantumCircuit\n\nqc = QuantumCircuit(2, 2)\nqc.h(0)        # put qubit 0 into superposition\nqc.cx(0, 1)    # entangle qubit 0 with qubit 1\nqc.measure([0, 1], [0, 1])\n\nRunning this on an ideal simulator gives roughly 50% \"00\" and 50% \"11\", and essentially never \"01\" or \"10\". On real hardware, noise will show a small number of \"01\" and \"10\" results.\n\nWhy it matters\n\nBell states are the basic resource for many quantum protocols, including quantum teleportation, superdense coding, entanglement-based quantum key distribution (such as E91), and tests of Bell inequalities that show quantum correlations cannot be explained by local hidden-variable theories.\n",
+    "json_clean": false,
+    "words": 419,
+    "claim": {
+      "algorithm": "bell",
+      "params": {},
+      "probabilities": {
+        "00": 0.5,
+        "11": 0.5,
+        "01": 0.0,
+        "10": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "00": 0.5,
+        "11": 0.5
+      },
+      "mismatches": []
+    }
+  },
+  "calls": [
+    {
+      "step": "EXPL",
+      "attempt": 0,
+      "raw": "A Bell state is a maximally entangled state of two qubits. The most common one is\n\n|Phi+> = (|00> + |11>) / sqrt(2)\n\nYou can create it with just two gates: a Hadamard (H) followed by a CNOT.\n\nStep-by-step\n\n1. Start with both qubits in |0>:\n   |psi0> = |0>|0> = |00>\n\n2. Apply a Hadamard gate to the first qubit (the control). H maps |0> to (|0> + |1>)/sqrt(2), so:\n   |psi1> = (|0> + |1>)/sqrt(2) ⊗ |0> = (|00> + |10>) / sqrt(2)\n   The first qubit is now in an equal superposition, but the two qubits are still not entangled; the state can still be written as a product of two single-qubit states.\n\n3. Apply a CNOT gate with qubit 1 as control and qubit 2 as target. CNOT flips the target only when the control is |1>:\n   |00> -> |00>\n   |10> -> |11>\n   so\n   |psi2> = (|00> + |11>) / sqrt(2) = |Phi+>\n\nThis final state cannot be written as a product of two single-qubit states, which is what makes it entangled. If you measure either qubit, you get 0 or 1 with 50% probability each, but the two results always agree: measuring 0 on one qubit means the other is 0, and measuring 1 means the other is 1.\n\nCircuit diagram\n\nq0: |0> --[H]--●--\n               |\nq1: |0> -------⊕--\n\nGetting the other three Bell states\n\nThere are four Bell states in total. You get them by changing the starting input (or, equivalently, adding X and/or Z gates):\n\n- Input |00> -> |Phi+> = (|00> + |11>) / sqrt(2)\n- Input |01> -> |Psi+> = (|01> + |10>) / sqrt(2)\n- Input |10> -> |Phi-> = (|00> - |11>) / sqrt(2)\n- Input |11> -> |Psi-> = (|01> - |10>) / sqrt(2)\n\nIn general, the H + CNOT circuit acting on input |a b> produces\n(|0 b> + (-1)^a |1 (NOT b)>) / sqrt(2).\n\nExample in Qiskit\n\nfrom qiskit import QuantumCircuit\n\nqc = QuantumCircuit(2, 2)\nqc.h(0)        # put qubit 0 into superposition\nqc.cx(0, 1)    # entangle qubit 0 with qubit 1\nqc.measure([0, 1], [0, 1])\n\nRunning this on an ideal simulator gives roughly 50% \"00\" and 50% \"11\", and essentially never \"01\" or \"10\". On real hardware, noise will show a small number of \"01\" and \"10\" results.\n\nWhy it matters\n\nBell states are the basic resource for many quantum protocols, including quantum teleportation, superdense coding, entanglement-based quantum key distribution (such as E91), and tests of Bell inequalities that show quantum correlations cannot be explained by local hidden-variable theories.\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"bell\", \"params\": {}, \"probabilities\": {\"00\": 0.5, \"11\": 0.5, \"01\": 0.0, \"10\": 0.0}, \"found_in_text\": true}"
+    }
+  ]
+}

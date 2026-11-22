@@ -1,0 +1,80 @@
+{
+  "question": "How do you create a Bell state?",
+  "level": "beginner",
+  "model": "gemini-3.6-flash",
+  "t_p1": 36.31,
+  "p1_json_clean": true,
+  "route": {
+    "in_scope": true,
+    "algorithm": "bell",
+    "params": {},
+    "intent": "explain",
+    "false_premise": null,
+    "language": "english",
+    "injection_attempt": false,
+    "reason": "The learner is asking for an explanation on how to create a Bell state."
+  },
+  "params_used": {},
+  "t_p2_0": 11.79,
+  "p2_json_clean_0": true,
+  "explanation": {
+    "goal": "Create a pair of entangled qubits in a Bell state, so their measurement results are always identical.",
+    "steps": [
+      {
+        "n": 1,
+        "action": "Start with two qubits both set to 0. In linear algebra, a single qubit 0 is the column vector [1, 0].",
+        "state": "|00>"
+      },
+      {
+        "n": 2,
+        "action": "Apply a Hadamard (H) gate to the first qubit to turn it into an equal combination of 0 and 1.",
+        "state": "(|00> + |10>)/sqrt(2)"
+      },
+      {
+        "n": 3,
+        "action": "Apply a Controlled-NOT (CNOT) gate, using the first qubit as control and second qubit as target. This flips the second qubit only when the first qubit is 1.",
+        "state": "(|00> + |11>)/sqrt(2)"
+      }
+    ],
+    "final_result": "Measuring both qubits yields 00 with probability 0.5 and 11 with probability 0.5; you will never measure 01 or 10.",
+    "analogy": "It is like flipping two magic coins that are guaranteed to land on the exact same side, even though neither side was chosen before looking.",
+    "misconception": "Quantum entanglement does not allow faster-than-light communication because the outcome of the first measurement is completely random.",
+    "uncertain": []
+  },
+  "t_p3_0": 14.98,
+  "p3_json_clean_0": true,
+  "claim": {
+    "algorithm": "bell",
+    "params": {},
+    "probabilities": {
+      "00": 0.5,
+      "11": 0.5,
+      "01": 0.0,
+      "10": 0.0
+    },
+    "found_in_text": true
+  },
+  "verification": {
+    "ok": true,
+    "truth": {
+      "00": 0.5,
+      "11": 0.5
+    },
+    "mismatches": []
+  },
+  "verified_attempt_0": true,
+  "t_p4": 17.69,
+  "practice": {
+    "question": "Based on the provided explanation of the Bell state algorithm, if you measure the first qubit and observe a result of 1, what is the probability (as a percentage) that measuring the second qubit will also yield a 1?",
+    "type": "conceptual",
+    "hint": "Recall the main goal of the algorithm regarding how the measurement results of the two entangled qubits relate to each other.",
+    "answer_key": "100% (or 1.0)",
+    "review": {
+      "answer_correct": true,
+      "level_ok": true,
+      "unambiguous": true,
+      "changes_made": "Initial thought was to ask about the CNOT gate function, but switched to a direct implication question about the measurement outcomes to test conceptual understanding of entanglement simply."
+    }
+  },
+  "p4_json_clean": true
+}

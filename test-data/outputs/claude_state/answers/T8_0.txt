@@ -1,0 +1,1 @@
+{"in_scope": true, "algorithm": "grover2", "params": {"marked": "11"}, "intent": "explain", "false_premise": null, "language": "hinglish", "injection_attempt": false, "reason": "The learner asks in Hinglish for a simple explanation of how Grover's algorithm works, which maps to the supported 2-qubit Grover search with the default marked item."}

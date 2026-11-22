@@ -1,0 +1,1 @@
+{"in_scope": true, "algorithm": "bell", "params": {}, "intent": "explain", "false_premise": null, "language": "english", "injection_attempt": false, "reason": "The learner asks why the Bell state (|00>+|11>)/sqrt(2) is entangled and wants the H+CNOT circuit, which is the supported bell algorithm."}

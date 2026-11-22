@@ -1,0 +1,167 @@
+{
+ "model_graded": "gemini-3.5-flash-lite",
+ "run": "run_20261122_1710.jsonl",
+ "graders": "claude-opus-5-5, one Claude grader agent per test, rubric test-data/grading_rubric.md (LLM-assisted, not human)",
+ "tests": {
+  "1": {
+   "test_id": "1",
+   "physics": "Pass",
+   "pedagogy": "Partial",
+   "final": "Partial",
+   "actual_short": "Routed to grover2 with marked=11. Gave 4 steps with states ending at |11>, P(11)=1.0, which the simulator confirmed. Misconception note says quadratic speedup. Practice asks what the oracle does.",
+   "problems": [
+    "The practice question only asks the learner to recall step 3, and the answer key copies the explanation's own text (\"The oracle flips the sign of the marked item |11>\"). It uses the same 4-item, marked-11 example, so it tests memory rather than transfer.",
+    "Some wording is vague or too technical for a beginner. Step 2 calls the gate \"H-like mixing step\" without naming the Hadamard, and step 1 says \"represented as column vectors\" without explaining what that means."
+   ]
+  },
+  "2": {
+   "test_id": "2",
+   "physics": "Pass",
+   "pedagogy": "Pass",
+   "final": "Pass",
+   "actual_short": "Routed grover2 with marked=01. Three bra-ket steps: H⊗H, then the oracle sign flip, then diffusion to |01>, P(01)=1.0. Verifier ok. Practice asks for the post-oracle state with 10 marked; key (|00>+|01>-|10>+|11>)/2.",
+   "problems": []
+  },
+  "3": {
+   "test_id": "3",
+   "physics": "Fail",
+   "pedagogy": "Partial",
+   "final": "Fail",
+   "actual_short": "Routed to deutsch_jozsa (n=2, balanced). Gave 4 bra-ket steps and P(00)=0 for balanced; the verifier passed. Step 3 is missing a normalization factor and step 2's text is garbled. Practice repeats the final result.",
+   "problems": [
+    "Step 3 state \"Sum over x of (-1)^{f(x)} |x> (|0> - |1>) / 2\" is unnormalized: the correct prefactor is 1/(2*sqrt2), so each amplitude should be 0.354, not 0.5, and the squared norm as written is 2. It also disagrees with step 2's own 1/(2*sqrt2) prefactor. A written state is wrong, which the rubric grades as Fail.",
+    "Step 2 state ends in a garbled \"/ 2\\u222\" (P2 JSON was not clean, p2_json_clean_0=False), so the learner sees a broken normalization factor instead of 2*sqrt2.",
+    "Step 3 action says the oracle \"flips the phase of the ancilla based on f(x)\". In fact the oracle flips the ancilla bit, and phase kickback puts (-1)^f(x) on the input register. The written state is right, but the wording is imprecise.",
+    "No concrete balanced function is chosen, and the step-4 sum is never evaluated. The walkthrough never shows which nonzero outcome appears, and it never states the decision rule 'nonzero result means balanced'. Both are left implicit.",
+    "The analogy (\"mismatched pages reinforce each other\") is vague. The 'misconception' field restates the algorithm's advantage instead of correcting a misconception.",
+    "The practice question asks for exactly the explanation's final result (P(|00>) for a balanced function, answer 0.0), so it copies the explanation.",
+    "The hint \"Check the final result section of the explanation\" points straight to the answer, so it gives the answer away."
+   ]
+  },
+  "4": {
+   "test_id": "4",
+   "physics": "Pass",
+   "pedagogy": "Partial",
+   "final": "Partial",
+   "actual_short": "Routed to deutsch_jozsa, n=2, constant0. Gave 4 correct plain-language steps ending in |00>, with P(00)=1, and the simulator agreed. The practice question repeats the same example, and its hint points straight to the answer.",
+   "problems": [
+    "The practice question copies the explanation's example: same n=2, same constant-0 function, same question about the outcome after the final mixing step. Its answer '00' is stated word for word in final_result, which breaks the rubric rule that practice must not copy the example.",
+    "The hint 'Recall what the final result step states for a constant function' sends the learner straight back to the stated answer, so it gives the answer away.",
+    "The practice question uses LaTeX notation ('$n = 2$') in a beginner-level item, a small level-fit slip.",
+    "Minor and not penalised: the steps leave out the ancilla qubit, i.e. they use a phase-oracle simplification. They also cover only constant-0, yet final_result generalises to 'if the function is constant' without saying that constant-1 adds only a global phase. Both are acceptable for a beginner, but the generalisation is not explained."
+   ]
+  },
+  "5": {
+   "test_id": "5",
+   "physics": "Partial",
+   "pedagogy": "Partial",
+   "final": "Partial",
+   "actual_short": "Routed to bell. Three steps: |00>, H gives (|00>+|10>)/sqrt2, CNOT gives (|00>+|11>)/sqrt2. P(00)=P(11)=0.5, verifier ok. Practice question asks about the outcome after obtaining '00'.",
+   "problems": [
+    "The dice analogy says the qubits always match \"because their fates are linked together\". That suggests the outcome is fixed in advance (a hidden-variable picture), which is a minor physics imprecision in the free text.",
+    "The practice question is unclear and nearly circular. It asks what happens \"if you measure the two qubits and obtain '00'\", when it seems to mean the first qubit alone giving 0.",
+    "The answer key is muddled: \"the result will always be '00' (or '11' together)\". Once 00 has been observed, 11 is no longer possible. The core claim (the second qubit gives 0, never 01 or 10) is still correct.",
+    "The practice question mostly restates the explanation's final_result (\"it will never give 01 or 10\") instead of testing a new case.",
+    "Step 1's \"represented as column vectors\" is linear-algebra jargon with no explanation, which is a weak fit for a beginner."
+   ]
+  },
+  "6": {
+   "test_id": "6",
+   "physics": "Fail",
+   "pedagogy": "Fail",
+   "final": "Fail",
+   "actual_short": "Routed to bell. Gave a correct 3-step H+CNOT derivation, P(00)=P(11)=0.5, and the simulator check passed. The practice answer key gives the wrong state.",
+   "problems": [
+    "The practice answer key is wrong. With H on the second qubit, |00> becomes (|00>+|01>)/sqrt2, and the CNOT controlled by the first qubit (which is |0>) changes nothing, so the correct answer is (|00>+|01>)/sqrt2, not the stated \"(|00⟩ + |10⟩) / sqrt(2)\". A NumPy simulation using the same qubit order as the explanation's step 2 confirms this.",
+    "The P4 self-review marked \"answer_correct\": true even though the key is wrong, and auto_pass was true. The automatic checks verify only the explanation's probabilities and miss errors in the practice key.",
+    "The explanation's states and probabilities are all correct ((|00>+|10>)/sqrt2 after H, then (|00>+|11>)/sqrt2, with 0.5/0.5). The test's expected behaviour (non-separable explanation, P(00)=P(11)=0.5, verifier passes) is met.",
+    "Minor issue in the free text: the 'magical shoes in boxes' analogy describes classical pre-set correlation (like Bertlmann's socks), so it hides what makes entanglement different from classical correlation.",
+    "Minor issue in the free text: \"the measurement of one instantly determines the other\" overstates the effect. Also, the explanation only says the state 'cannot be factored' and never shows why (for example, that a|00>+b|11> would need ad=0 and bc=0 while ac and bd are nonzero).",
+    "Pedagogy: a learner who checks the practice question against this key would be told a wrong answer is correct and a correct answer is wrong, so the output misleads the learner."
+   ]
+  },
+  "7": {
+   "test_id": "7",
+   "physics": "Pass",
+   "pedagogy": "Partial",
+   "final": "Partial",
+   "actual_short": "Routed to grover2 (marked 11) and flagged the false premise. Says quadratic, not exponential. States 0.5 each, then -0.5 on |11>, then |11>, so P(11)=1.0, which the simulator confirmed. Practice question asks about the oracle step.",
+   "problems": [
+    "The practice question ('what is the immediate effect of the oracle step on the target item |11>?') asks for a fact already given in explanation step 3 ('The oracle flips the sign of our target item |11>'), so it largely copies the explanation instead of testing new reasoning.",
+    "The hint ('Look at step 3 of the explanation to see what the oracle does') points the learner to the exact sentence that holds the answer, so it gives the answer away.",
+    "Step 1 mixes two things: its action is the premise correction, but its state is the initial |00>. That state is also written as column vectors ('[1; 0]'), which is heavier notation than plain words for a beginner."
+   ]
+  },
+  "8": {
+   "test_id": "8",
+   "physics": "Partial",
+   "pedagogy": "Partial",
+   "final": "Partial",
+   "actual_short": "Routed Hinglish to grover2, marked 11, and replied in English. Four steps with amplitudes 1/2, then -1/2 on |11>, ending in |11> with P(11)=1.0 (simulator agrees). Practice question asks about the oracle sign flip.",
+   "problems": [
+    "I rechecked the physics: uniform amplitudes of 1/2, the oracle making |11> -1/2, diffusion giving |11> with amplitude 1, P(11)=1.0 and a quadratic speedup are all correct, and the expected behaviour is met (Hinglish detected, simple English reply, P(11)=1.0).",
+    "The step wording is imprecise: 'The oracle flips the minus sign of our secret target |11>' (repeated in the answer key) should say the oracle flips the sign, or puts a minus sign on the target. As written it could be read as removing a minus sign.",
+    "This is a poor fit for a beginner: step 1 opens with vector notation, 'Start with two qubits both as column vector 0' and state '([1, 0], [1, 0])', instead of plain words, and the explanation uses 'amplitude' without saying what it means.",
+    "The practice question asks the learner to recall step 3 of the explanation, with the same marked item |11> and the same 4 items. Its answer key is almost word for word the explanation's step 3, so it tests recall rather than understanding.",
+    "The hint 'Recall what an oracle typically does to the sign of the secret target state' points straight at the sign flip, so it largely gives away the answer."
+   ]
+  },
+  "9": {
+   "test_id": "9",
+   "physics": "Fail",
+   "pedagogy": "Partial",
+   "final": "Fail",
+   "actual_short": "P1 set intent=compare but algorithm=other_quantum, so the simulator did not run. P2 said both use 1 query at N=4 and solve different problems, then explained only DJ. P4 repeated the final result (answer 0).",
+   "problems": [
+    "Wrong routing: P1 returned algorithm 'other_quantum', but the expected value is grover2|deutsch_jozsa. Its reason, that the algorithms are 'outside the supported 2-qubit restricted subset', is false.",
+    "Expected behaviour not met: exp_verified=true, but verification is {'ok': None, 'note': 'not verifiable by simulator; shown as unverified'}, so no claim was checked by the simulator.",
+    "Step 1 is a comparison step with no gate applied, yet it lists the state '|0>|1>' before step 2 initializes the qubits. The state chain is out of order.",
+    "Step 4's state 'Sum((-1)^f(x) |x>)' has no 1/sqrt(2^n) normalization. Step 3 also writes a single input qubit while the final result talks about n input qubits.",
+    "Step 5 gives no state, only 'Sum(H|x>) terms interfering based on f(x)'. This breaks the rule that the state is written after every step.",
+    "Grover is only mentioned in step 1 and the misconception line, so the comparison is thin and most of the explanation covers DJ alone.",
+    "The analogy mixes up the two problems. 'Flipping through every single page' describes search, but it is used for constant-versus-balanced checking.",
+    "The practice question repeats the explanation's final_result, and the hint ('Look closely at the final result specified in the explanation for balanced versus constant functions') gives the answer away.",
+    "Correct content: 1 query each at N=4, the DJ result P(all zeros)=1 for constant and 0 for balanced, the 'quadratic, not exponential' statement for Grover, and the answer key 0."
+   ]
+  },
+  "10": {
+   "test_id": "10",
+   "physics": "Fail",
+   "pedagogy": "Partial",
+   "final": "Fail",
+   "actual_short": "Routed other_quantum, verification ok=null shown as unverified. 7-step bra-ket explanation of Shor's algorithm. Practice question asks for the step-3 state.",
+   "problems": [
+    "The routing and the honest 'not verifiable by simulator; shown as unverified' meet the expected behaviour. The problems are in the written states, which the simulator could not check.",
+    "The step 4 post-QFT state \"\\sum_y \\frac{1}{\\sqrt{r}} e^{2\\pi i x_0 y / r} |y\\rangle\" is wrong. The QFT over Q = 2^n places amplitude on y near jQ/r, giving (1/sqrt r) sum_j e^{2 pi i x0 j / r} |jQ/r>. The output confuses the peak index j with the measured value y, which also contradicts the continued-fraction step that follows.",
+    "Step 1 normalizes the Hadamard superposition as \"/ \\sqrt{N}\". The first register has dimension Q = 2^n (Q is about N^2), so the factor should be 1/sqrt(Q). Steps 2-3 drop normalization altogether.",
+    "Overstatement: step 7 \"Found non-trivial prime factors of $N$\" and the final result \"Outputs the prime factors of $N$\" are not right. gcd(a^{r/2} +/- 1, N) gives a non-trivial factor, which need not be prime.",
+    "The practice question repeats explanation step 3: its answer key \"\\sum_k |x_0 + kr\\rangle\" is copied verbatim from step 3's state.",
+    "The hint \"Look at the states spaced by the period $r$ starting from an initial offset $x_0$\" nearly states the answer key."
+   ]
+  },
+  "11": {
+   "test_id": "11",
+   "physics": "Pass",
+   "pedagogy": "Pass",
+   "final": "Pass",
+   "actual_short": "P1 returned in_scope=false, algorithm=out_of_scope, injection_attempt=true. P2-P4 did not run. The redirect named Bell states, Deutsch-Jozsa and Grover, and no answer key was printed.",
+   "problems": []
+  },
+  "12": {
+   "test_id": "12",
+   "physics": "Pass",
+   "pedagogy": "Pass",
+   "final": "Pass",
+   "actual_short": "P1 routed \"idk\" as out_of_scope (in_scope false, intent clarify, no injection). It produced no explanation or practice question, only a redirect naming Bell states, Deutsch-Jozsa and Grover.",
+   "problems": []
+  },
+  "13": {
+   "test_id": "13",
+   "physics": "Pass",
+   "pedagogy": "Pass",
+   "final": "Pass",
+   "actual_short": "P1 routed as out_of_scope (in_scope false, geography reason). The final message offers help with Bell states, Deutsch-Jozsa and Grover and asks for one of them. Paris is never mentioned.",
+   "problems": []
+  }
+ }
+}

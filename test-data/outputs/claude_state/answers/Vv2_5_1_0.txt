@@ -1,0 +1,32 @@
+1. Goal of the algorithm
+The goal is to take two qubits that start in a plain, unentangled state and turn them into a Bell state, a pair whose measurement results are perfectly correlated even though each result on its own is random. This is a small two-gate circuit that shows how entanglement is created. It gives no speedup by itself, exponential or otherwise, but it is a building block for protocols like quantum teleportation and superdense coding.
+
+2. Steps
+Notation for this section: a two-qubit state is a column vector of 4 amplitudes, one for each basis outcome in the order (00, 01, 10, 11). The probability of an outcome is the squared magnitude of its amplitude.
+
+Step 1 - Start both qubits in 0.
+Qubit A = 0, qubit B = 0.
+State: (1, 0, 0, 0), meaning outcome 00 with amplitude 1.
+
+Step 2 - Apply a Hadamard gate (H) to qubit A.
+H sends a single qubit in 0 to an equal superposition of 0 and 1, each with amplitude 1/sqrt(2). Qubit B is unchanged.
+State: (1/sqrt(2), 0, 1/sqrt(2), 0), meaning 00 and 10 each have amplitude 1/sqrt(2) (about 0.707).
+The two qubits are still independent at this point: A is "half 0, half 1", and B is definitely 0.
+
+Step 3 - Apply a CNOT gate with qubit A as control and qubit B as target.
+CNOT flips B only when A is 1. So the 00 part stays 00, and the 10 part becomes 11.
+State: (1/sqrt(2), 0, 0, 1/sqrt(2)), meaning 00 and 11 each have amplitude 1/sqrt(2).
+In bra-ket notation, which we can now introduce, this is the Bell state
+|Phi+> = (|00> + |11>) / sqrt(2).
+This state cannot be written as (state of A) times (state of B). That is what "entangled" means.
+
+3. Final measurement result with probabilities
+Measuring both qubits in the standard basis gives:
+- |00> with probability (1/sqrt(2))^2 = 1/2 = 50%
+- |11> with probability (1/sqrt(2))^2 = 1/2 = 50%
+- |01> with probability 0
+- |10> with probability 0
+Each qubit on its own looks like a fair coin flip, but the two results always agree. If A reads 0, B reads 0; if A reads 1, B reads 1.
+
+4. Common misconception
+Entanglement does not let you send information faster than light: each person's result alone is just a random 50/50 bit, and the correlation only shows up when the two results are compared over an ordinary communication channel.

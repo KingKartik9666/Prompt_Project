@@ -1,0 +1,35 @@
+1. Goal of the algorithm
+Grover's algorithm finds one "marked" item in an unsorted list of N items, where the only way to recognise the item is to ask a black-box checker ("oracle") whether a given item is the right one. It does this with about (pi/4) x sqrt(N) oracle queries instead of the roughly N queries a classical computer needs, which is a quadratic speedup, not an exponential one.
+
+2. Steps
+Setup: 4 items need 2 qubits, because 2 qubits can represent 4 labels: 00, 01, 10, 11. We describe the 2-qubit state as a vector of 4 amplitudes, written in the order [00, 01, 10, 11]. The probability of measuring a label is the square of its amplitude. Suppose the marked item is 11 (the algorithm does not know this; only the oracle does).
+
+Step 1 - Initialise both qubits to 0.
+State: [1, 0, 0, 0]
+(All amplitude is on label 00.)
+
+Step 2 - Apply a Hadamard gate to each qubit to create an equal superposition.
+State: [1/2, 1/2, 1/2, 1/2]
+(Each label has probability (1/2)^2 = 1/4. Measuring now would be no better than a random guess.)
+
+Step 3 - Apply the oracle. It flips the sign of the amplitude of the marked item and leaves the others unchanged.
+State: [1/2, 1/2, 1/2, -1/2]
+(Probabilities are still all 1/4, because squaring removes the sign. The information is hidden in the phase.)
+
+Step 4 - Apply the diffusion operator ("inversion about the mean"). Each amplitude a is replaced by 2 x mean - a.
+Mean of the amplitudes = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4.
+Unmarked items: 2 x 1/4 - 1/2 = 0
+Marked item: 2 x 1/4 - (-1/2) = 1
+State: [0, 0, 0, 1]
+(Steps 3 and 4 together form one "Grover iteration". For N = 4, the optimal number of iterations is exactly 1, which matches (pi/4) x sqrt(4) = about 1.57, rounded down to 1.)
+
+3. Final measurement result with probabilities
+Using bra-ket notation now: the final state is |11>, i.e. 0|00> + 0|01> + 0|10> + 1|11>.
+P(00) = 0
+P(01) = 0
+P(10) = 0
+P(11) = 1
+So, on an ideal noiseless quantum computer, measuring gives the marked item 11 with probability 100% after a single oracle query. A classical algorithm needs on average 2.25 queries for 4 items (up to 3 in the worst case, since if the first 3 checks fail, the 4th item must be the answer). For N = 4 the success probability being exactly 1 is a special case. For larger N, Grover's success probability is high but generally not exactly 1, and on real noisy hardware it will be lower.
+
+4. Common misconception
+Grover's algorithm is often said to give an exponential speedup, but its speedup is only quadratic (O(sqrt(N)) versus O(N)), and it is proven that no quantum algorithm can search an unstructured list faster than that.

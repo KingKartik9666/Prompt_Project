@@ -1,0 +1,115 @@
+{
+  "job": "T2",
+  "kind": "test",
+  "test_id": "2",
+  "step": "done",
+  "attempt": 0,
+  "feedback": "",
+  "log": {
+    "question": "Explain Grover search on 2 qubits when the marked item is 01 using bra-ket notation.",
+    "level": "intermediate",
+    "p1_json_clean": true,
+    "route": {
+      "in_scope": true,
+      "algorithm": "grover2",
+      "params": {
+        "marked": "01"
+      },
+      "intent": "explain",
+      "false_premise": null,
+      "language": "english",
+      "injection_attempt": false,
+      "reason": "The learner asks for an explanation of 2-qubit Grover search with marked item 01 in bra-ket notation."
+    },
+    "params_used": {
+      "marked": "01"
+    },
+    "p2_json_clean_0": true,
+    "explanation": {
+      "goal": "Find the marked item |01> among 4 items (|00>, |01>, |10>, |11>) with one oracle call.",
+      "steps": [
+        {
+          "n": 1,
+          "action": "Start with both qubits in |0>.",
+          "state": "|00>"
+        },
+        {
+          "n": 2,
+          "action": "Apply H to both qubits, where H = (1/sqrt(2))[[1, 1], [1, -1]]. This gives the uniform superposition |s> with amplitude 1/2 on each basis state.",
+          "state": "(|00> + |01> + |10> + |11>)/2"
+        },
+        {
+          "n": 3,
+          "action": "Apply the oracle U_f = I - 2|01><01| = diag(1, -1, 1, 1), which flips the sign of the amplitude of |01> only. Amplitudes are now 1/2, -1/2, 1/2, 1/2.",
+          "state": "(|00> - |01> + |10> + |11>)/2"
+        },
+        {
+          "n": 4,
+          "action": "Apply the diffusion operator D = 2|s><s| - I (built as (H⊗H)(2|00><00| - I)(H⊗H)). It reflects each amplitude about the mean: mean = (1/2 - 1/2 + 1/2 + 1/2)/4 = 1/4, and each amplitude a becomes 2(1/4) - a. So 1/2 becomes 0 and -1/2 becomes 1.",
+          "state": "|01>"
+        }
+      ],
+      "final_result": "Measuring gives 01 with probability 1.0 after one Grover iteration; 00, 10 and 11 each have probability 0.",
+      "analogy": "",
+      "misconception": "Grover's speedup is quadratic (about sqrt(N) oracle queries), not exponential; for N = 4 one iteration happens to give the exact answer.",
+      "uncertain": []
+    },
+    "p3_json_clean_0": true,
+    "claim": {
+      "algorithm": "grover2",
+      "params": {
+        "marked": "01"
+      },
+      "probabilities": {
+        "00": 0.0,
+        "01": 1.0,
+        "10": 0.0,
+        "11": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "01": 1.0
+      },
+      "mismatches": []
+    },
+    "verified_attempt_0": true,
+    "practice": {
+      "question": "Suppose the 2-qubit Grover search is run the same way as in the explanation, but the marked item is now |10> instead of |01>, so the oracle is U_f = I - 2|10><10| = diag(1, 1, -1, 1). Starting from |00>, apply H to both qubits, then the oracle, then the diffusion operator D = 2|s><s| - I. Write the amplitudes of |00>, |01>, |10>, |11> (a) after the oracle and (b) after the diffusion operator, and give the probability of measuring 10.",
+      "type": "calculation",
+      "hint": "After the oracle, find the mean of the four amplitudes, then replace each amplitude a with 2*(mean) - a.",
+      "answer_key": "(a) After H on both qubits every amplitude is 1/2; the oracle flips only the sign of |10>, giving amplitudes 1/2, 1/2, -1/2, 1/2 for |00>, |01>, |10>, |11>. (b) Mean = (1/2 + 1/2 - 1/2 + 1/2)/4 = 1/4. Each amplitude becomes 2(1/4) - a: 1/2 -> 0 and -1/2 -> 1, so the amplitudes are 0, 0, 1, 0 and the state is |10>. Probability of measuring 10 = 1^2 = 1.0 (00, 01 and 11 each have probability 0). This matches the verified result for marked 01 ({\"01\": 1.0}) with the roles of 01 and 10 swapped, since one Grover iteration is exact for N = 4 whichever item is marked.",
+      "review": {
+        "answer_correct": true,
+        "level_ok": true,
+        "unambiguous": true,
+        "changes_made": "Draft asked only for the final probability; added parts (a) and (b) so the learner computes intermediate amplitudes, which fits the intermediate level, and stated the oracle matrix and basis order explicitly to remove ambiguity."
+      }
+    },
+    "p4_json_clean": true
+  },
+  "calls": [
+    {
+      "step": "P1",
+      "attempt": 0,
+      "raw": "{\"in_scope\": true, \"algorithm\": \"grover2\", \"params\": {\"marked\": \"01\"}, \"intent\": \"explain\", \"false_premise\": null, \"language\": \"english\", \"injection_attempt\": false, \"reason\": \"The learner asks for an explanation of 2-qubit Grover search with marked item 01 in bra-ket notation.\"}"
+    },
+    {
+      "step": "P2",
+      "attempt": 0,
+      "raw": "{\"goal\": \"Find the marked item |01> among 4 items (|00>, |01>, |10>, |11>) with one oracle call.\", \"steps\": [{\"n\": 1, \"action\": \"Start with both qubits in |0>.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits, where H = (1/sqrt(2))[[1, 1], [1, -1]]. This gives the uniform superposition |s> with amplitude 1/2 on each basis state.\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"Apply the oracle U_f = I - 2|01><01| = diag(1, -1, 1, 1), which flips the sign of the amplitude of |01> only. Amplitudes are now 1/2, -1/2, 1/2, 1/2.\", \"state\": \"(|00> - |01> + |10> + |11>)/2\"}, {\"n\": 4, \"action\": \"Apply the diffusion operator D = 2|s><s| - I (built as (H⊗H)(2|00><00| - I)(H⊗H)). It reflects each amplitude about the mean: mean = (1/2 - 1/2 + 1/2 + 1/2)/4 = 1/4, and each amplitude a becomes 2(1/4) - a. So 1/2 becomes 0 and -1/2 becomes 1.\", \"state\": \"|01>\"}], \"final_result\": \"Measuring gives 01 with probability 1.0 after one Grover iteration; 00, 10 and 11 each have probability 0.\", \"analogy\": \"\", \"misconception\": \"Grover's speedup is quadratic (about sqrt(N) oracle queries), not exponential; for N = 4 one iteration happens to give the exact answer.\", \"uncertain\": []}\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"grover2\", \"params\": {\"marked\": \"01\"}, \"probabilities\": {\"00\": 0.0, \"01\": 1.0, \"10\": 0.0, \"11\": 0.0}, \"found_in_text\": true}"
+    },
+    {
+      "step": "P4",
+      "attempt": 0,
+      "raw": "{\"question\": \"Suppose the 2-qubit Grover search is run the same way as in the explanation, but the marked item is now |10> instead of |01>, so the oracle is U_f = I - 2|10><10| = diag(1, 1, -1, 1). Starting from |00>, apply H to both qubits, then the oracle, then the diffusion operator D = 2|s><s| - I. Write the amplitudes of |00>, |01>, |10>, |11> (a) after the oracle and (b) after the diffusion operator, and give the probability of measuring 10.\", \"type\": \"calculation\", \"hint\": \"After the oracle, find the mean of the four amplitudes, then replace each amplitude a with 2*(mean) - a.\", \"answer_key\": \"(a) After H on both qubits every amplitude is 1/2; the oracle flips only the sign of |10>, giving amplitudes 1/2, 1/2, -1/2, 1/2 for |00>, |01>, |10>, |11>. (b) Mean = (1/2 + 1/2 - 1/2 + 1/2)/4 = 1/4. Each amplitude becomes 2(1/4) - a: 1/2 -> 0 and -1/2 -> 1, so the amplitudes are 0, 0, 1, 0 and the state is |10>. Probability of measuring 10 = 1^2 = 1.0 (00, 01 and 11 each have probability 0). This matches the verified result for marked 01 ({\\\"01\\\": 1.0}) with the roles of 01 and 10 swapped, since one Grover iteration is exact for N = 4 whichever item is marked.\", \"review\": {\"answer_correct\": true, \"level_ok\": true, \"unambiguous\": true, \"changes_made\": \"Draft asked only for the final probability; added parts (a) and (b) so the learner computes intermediate amplitudes, which fits the intermediate level, and stated the oracle matrix and basis order explicitly to remove ambiguity.\"}}"
+    }
+  ]
+}

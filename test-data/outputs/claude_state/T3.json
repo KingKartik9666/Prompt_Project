@@ -1,0 +1,128 @@
+{
+  "job": "T3",
+  "kind": "test",
+  "test_id": "3",
+  "step": "done",
+  "attempt": 0,
+  "feedback": "",
+  "log": {
+    "question": "Walk me through Deutsch-Jozsa for a balanced function on 2 input bits.",
+    "level": "intermediate",
+    "p1_json_clean": true,
+    "route": {
+      "in_scope": true,
+      "algorithm": "deutsch_jozsa",
+      "params": {
+        "n": 2,
+        "f_kind": "balanced"
+      },
+      "intent": "explain",
+      "false_premise": null,
+      "language": "english",
+      "injection_attempt": false,
+      "reason": "The learner asks for a walkthrough of the Deutsch-Jozsa algorithm with a balanced function on 2 input bits."
+    },
+    "params_used": {
+      "n": 2,
+      "f_kind": "balanced"
+    },
+    "p2_json_clean_0": true,
+    "explanation": {
+      "goal": "Decide with one oracle query whether f on 2 input bits is constant or balanced; here f is balanced, using the example f(x1x2) = x1 (outputs 0 for 00, 01 and 1 for 10, 11).",
+      "steps": [
+        {
+          "n": 1,
+          "action": "Prepare two input qubits in |0> and one ancilla qubit in |1>.",
+          "state": "|00>|1>"
+        },
+        {
+          "n": 2,
+          "action": "Apply H = (1/sqrt(2))[[1,1],[1,-1]] to all three qubits. Inputs become an equal superposition with amplitude 1/2 each; the ancilla becomes |-> = (|0> - |1>)/sqrt(2).",
+          "state": "(|00> + |01> + |10> + |11>)/2 ⊗ (|0> - |1>)/sqrt(2)"
+        },
+        {
+          "n": 3,
+          "action": "Apply the oracle U_f|x>|y> = |x>|y XOR f(x)> once. Because the ancilla is |->, this gives phase kickback: each |x> picks up the factor (-1)^f(x). With f = x1, |10> and |11> get a minus sign.",
+          "state": "(|00> + |01> - |10> - |11>)/2 ⊗ (|0> - |1>)/sqrt(2)"
+        },
+        {
+          "n": 4,
+          "action": "Ignore the ancilla (it stays |-> and is not entangled). Rewrite the input state as a product: (|0> - |1>)/sqrt(2) ⊗ (|0> + |1>)/sqrt(2) = |->|+>.",
+          "state": "|->|+> ⊗ |->"
+        },
+        {
+          "n": 5,
+          "action": "Apply H⊗H to the two input qubits. H|-> = |1> and H|+> = |0>. In general the amplitude of |00> is (1/4) * sum over x of (-1)^f(x), which is 0 for any balanced f.",
+          "state": "|10> ⊗ (|0> - |1>)/sqrt(2)"
+        },
+        {
+          "n": 6,
+          "action": "Measure the two input qubits.",
+          "state": "|10> with amplitude 1; |00> with amplitude 0"
+        }
+      ],
+      "final_result": "For the input qubits: P(10) = 1, P(00) = 0, P(01) = 0, P(11) = 0. P(all zeros) = 0, so the function is balanced. Only one oracle query was used; a deterministic classical algorithm needs up to 2^(n-1) + 1 = 3 queries in the worst case for n = 2. (A different balanced f, e.g. f = x1 XOR x2, gives a different non-zero outcome such as 11, but P(00) is always 0.)",
+      "analogy": "",
+      "misconception": "The speedup is against deterministic classical algorithms; a randomized classical algorithm can tell constant from balanced with high probability using only a few queries, so Deutsch-Jozsa is not proof of an exponential advantage for practical problems.",
+      "uncertain": []
+    },
+    "p3_json_clean_0": true,
+    "claim": {
+      "algorithm": "deutsch_jozsa",
+      "params": {
+        "n": 2,
+        "f_kind": "balanced"
+      },
+      "probabilities": {
+        "10": 1.0,
+        "00": 0.0,
+        "01": 0.0,
+        "11": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "00": 0.0
+      },
+      "mismatches": []
+    },
+    "verified_attempt_0": true,
+    "practice": {
+      "question": "Run the same 2-qubit Deutsch-Jozsa circuit as in the explanation, but with the balanced function f(x1x2) = x2 (so f(00) = 0, f(01) = 1, f(10) = 0, f(11) = 1), where x1 is the left qubit and x2 the right qubit. (a) Write the state of the two input qubits after the oracle (phase kickback) step. (b) Write it as a product of single-qubit states. (c) Give the measurement probabilities P(00), P(01), P(10), P(11) after the final H⊗H, and state what the result tells you about f.",
+      "type": "calculation",
+      "hint": "Apply the factor (-1)^f(x) to each basis state, then try to factor the result into a left-qubit state times a right-qubit state, as in step 4 of the explanation.",
+      "answer_key": "(a) The minus sign goes on the states where x2 = 1: (|00> - |01> + |10> - |11>)/2. (b) This factors as (|0> + |1>)/sqrt(2) ⊗ (|0> - |1>)/sqrt(2) = |+>|->. (c) H|+> = |0> and H|-> = |1>, so the input qubits end in |01>: P(01) = 1, P(00) = 0, P(10) = 0, P(11) = 0. Check: the amplitude of |00> is (1/4)(1 - 1 + 1 - 1) = 0. Since P(00) = 0, f is balanced, which matches the verified result P(00) = 0.0. Only one oracle query was used.",
+      "review": {
+        "answer_correct": true,
+        "level_ok": true,
+        "unambiguous": true,
+        "changes_made": "Changed the function from the explanation's f = x1 to f = x2, and did not use f = x1 XOR x2 because the explanation already gives its outcome. Stated the qubit order (x1 on the left) and listed f's full truth table so the outcome |01> is unambiguous. Checked that the |00> amplitude is 0, consistent with the verified result."
+      }
+    },
+    "p4_json_clean": true
+  },
+  "calls": [
+    {
+      "step": "P1",
+      "attempt": 0,
+      "raw": "{\"in_scope\": true, \"algorithm\": \"deutsch_jozsa\", \"params\": {\"n\": 2, \"f_kind\": \"balanced\"}, \"intent\": \"explain\", \"false_premise\": null, \"language\": \"english\", \"injection_attempt\": false, \"reason\": \"The learner asks for a walkthrough of the Deutsch-Jozsa algorithm with a balanced function on 2 input bits.\"}"
+    },
+    {
+      "step": "P2",
+      "attempt": 0,
+      "raw": "{\"goal\": \"Decide with one oracle query whether f on 2 input bits is constant or balanced; here f is balanced, using the example f(x1x2) = x1 (outputs 0 for 00, 01 and 1 for 10, 11).\", \"steps\": [{\"n\": 1, \"action\": \"Prepare two input qubits in |0> and one ancilla qubit in |1>.\", \"state\": \"|00>|1>\"}, {\"n\": 2, \"action\": \"Apply H = (1/sqrt(2))[[1,1],[1,-1]] to all three qubits. Inputs become an equal superposition with amplitude 1/2 each; the ancilla becomes |-> = (|0> - |1>)/sqrt(2).\", \"state\": \"(|00> + |01> + |10> + |11>)/2 ⊗ (|0> - |1>)/sqrt(2)\"}, {\"n\": 3, \"action\": \"Apply the oracle U_f|x>|y> = |x>|y XOR f(x)> once. Because the ancilla is |->, this gives phase kickback: each |x> picks up the factor (-1)^f(x). With f = x1, |10> and |11> get a minus sign.\", \"state\": \"(|00> + |01> - |10> - |11>)/2 ⊗ (|0> - |1>)/sqrt(2)\"}, {\"n\": 4, \"action\": \"Ignore the ancilla (it stays |-> and is not entangled). Rewrite the input state as a product: (|0> - |1>)/sqrt(2) ⊗ (|0> + |1>)/sqrt(2) = |->|+>.\", \"state\": \"|->|+> ⊗ |->\"}, {\"n\": 5, \"action\": \"Apply H⊗H to the two input qubits. H|-> = |1> and H|+> = |0>. In general the amplitude of |00> is (1/4) * sum over x of (-1)^f(x), which is 0 for any balanced f.\", \"state\": \"|10> ⊗ (|0> - |1>)/sqrt(2)\"}, {\"n\": 6, \"action\": \"Measure the two input qubits.\", \"state\": \"|10> with amplitude 1; |00> with amplitude 0\"}], \"final_result\": \"For the input qubits: P(10) = 1, P(00) = 0, P(01) = 0, P(11) = 0. P(all zeros) = 0, so the function is balanced. Only one oracle query was used; a deterministic classical algorithm needs up to 2^(n-1) + 1 = 3 queries in the worst case for n = 2. (A different balanced f, e.g. f = x1 XOR x2, gives a different non-zero outcome such as 11, but P(00) is always 0.)\", \"analogy\": \"\", \"misconception\": \"The speedup is against deterministic classical algorithms; a randomized classical algorithm can tell constant from balanced with high probability using only a few queries, so Deutsch-Jozsa is not proof of an exponential advantage for practical problems.\", \"uncertain\": []}\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"deutsch_jozsa\", \"params\": {\"n\": 2, \"f_kind\": \"balanced\"}, \"probabilities\": {\"10\": 1.0, \"00\": 0.0, \"01\": 0.0, \"11\": 0.0}, \"found_in_text\": true}"
+    },
+    {
+      "step": "P4",
+      "attempt": 0,
+      "raw": "{\"question\": \"Run the same 2-qubit Deutsch-Jozsa circuit as in the explanation, but with the balanced function f(x1x2) = x2 (so f(00) = 0, f(01) = 1, f(10) = 0, f(11) = 1), where x1 is the left qubit and x2 the right qubit. (a) Write the state of the two input qubits after the oracle (phase kickback) step. (b) Write it as a product of single-qubit states. (c) Give the measurement probabilities P(00), P(01), P(10), P(11) after the final H⊗H, and state what the result tells you about f.\", \"type\": \"calculation\", \"hint\": \"Apply the factor (-1)^f(x) to each basis state, then try to factor the result into a left-qubit state times a right-qubit state, as in step 4 of the explanation.\", \"answer_key\": \"(a) The minus sign goes on the states where x2 = 1: (|00> - |01> + |10> - |11>)/2. (b) This factors as (|0> + |1>)/sqrt(2) ⊗ (|0> - |1>)/sqrt(2) = |+>|->. (c) H|+> = |0> and H|-> = |1>, so the input qubits end in |01>: P(01) = 1, P(00) = 0, P(10) = 0, P(11) = 0. Check: the amplitude of |00> is (1/4)(1 - 1 + 1 - 1) = 0. Since P(00) = 0, f is balanced, which matches the verified result P(00) = 0.0. Only one oracle query was used.\", \"review\": {\"answer_correct\": true, \"level_ok\": true, \"unambiguous\": true, \"changes_made\": \"Changed the function from the explanation's f = x1 to f = x2, and did not use f = x1 XOR x2 because the explanation already gives its outcome. Stated the qubit order (x1 on the left) and listed f's full truth table so the outcome |01> is unambiguous. Checked that the |00> amplitude is 0, consistent with the verified result.\"}}"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "job": "Vv2_7_1",
+  "kind": "version",
+  "version": "v2",
+  "test_id": "7",
+  "rep": 1,
+  "step": "done",
+  "algo": "grover2",
+  "params": {
+    "marked": "11"
+  },
+  "log": {
+    "explanation_raw": "Short answer first: no. Grover's algorithm gives a quadratic speedup, not an exponential one. Searching N unsorted items takes about N/2 checks on average classically (N in the worst case). Grover needs only about (pi/4) * sqrt(N) oracle queries. That gap is real and useful, but it is quadratic. Exponential speedups are known for other problems, such as factoring with Shor's algorithm.\n\n1. Goal of the algorithm\nGrover's algorithm finds the one \"marked\" item in an unsorted list of N items. It uses a black-box checker (the oracle) that can only answer \"is this the right item?\", and it needs about sqrt(N) checks instead of about N.\n\n2. Steps (4 items, so 2 qubits; the marked item is assumed to be item 3, written 11 in binary)\nWe write the 2-qubit state as a vector of 4 amplitudes, one for each basis pattern, in the order [00, 01, 10, 11]. The probability of measuring a pattern is its amplitude squared.\n\nStep 1 - Initialise. Both qubits start at 0.\n   State: [1, 0, 0, 0]  (certainly 00)\n\nStep 2 - Create an equal superposition. Apply a Hadamard gate to each qubit.\n   State: [1/2, 1/2, 1/2, 1/2]\n   Each item now has probability (1/2)^2 = 1/4, the same as a random guess.\n\nStep 3 - Oracle (one query). The oracle flips the sign of the marked item's amplitude and leaves the others alone. The probabilities do not change yet, because (-1/2)^2 = 1/4, but the sign is now different.\n   State: [1/2, 1/2, 1/2, -1/2]\n\nStep 4 - Diffusion (\"inversion about the mean\"). Every amplitude a becomes (2 * mean - a).\n   Mean = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4, so 2 * mean = 1/2.\n   Unmarked items: 1/2 - 1/2 = 0\n   Marked item: 1/2 - (-1/2) = 1\n   State: [0, 0, 0, 1]\n   (In circuit form this is: Hadamards, a phase flip on every state except 00, then Hadamards again.)\n\nSteps 3 and 4 together make one \"Grover iteration\". The usual number of iterations is about (pi/4) * sqrt(N). For N = 4 that is about 1.57, which rounds to 1, and for N = 4 one iteration happens to be exactly enough.\n\n3. Final measurement result with probabilities\nIn bra-ket notation (|x> just means \"the basis state labelled x\"), the final state is\n   |psi> = 0|00> + 0|01> + 0|10> + 1|11> = |11>\nMeasuring both qubits gives:\n   P(00) = 0,  P(01) = 0,  P(10) = 0,  P(11) = 1\nSo for N = 4 we find the marked item with certainty (100%) after a single oracle query. A classical search that checks items one at a time needs more than 2 checks on average (about 2.25 if you skip checking the last remaining item, otherwise 2.5). For larger N, Grover's success probability is usually close to 1 but not exactly 1.\n\n4. Common misconception\nGrover does not give an exponential speedup. It is a provably optimal quadratic speedup (about sqrt(N) versus N queries), and running more iterations than needed actually lowers the success probability instead of improving it.\n",
+    "json_clean": false,
+    "words": 513,
+    "claim": {
+      "algorithm": "grover2",
+      "params": {
+        "marked": "11"
+      },
+      "probabilities": {
+        "00": 0.0,
+        "01": 0.0,
+        "10": 0.0,
+        "11": 1.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "11": 1.0
+      },
+      "mismatches": []
+    }
+  },
+  "calls": [
+    {
+      "step": "EXPL",
+      "attempt": 0,
+      "raw": "Short answer first: no. Grover's algorithm gives a quadratic speedup, not an exponential one. Searching N unsorted items takes about N/2 checks on average classically (N in the worst case). Grover needs only about (pi/4) * sqrt(N) oracle queries. That gap is real and useful, but it is quadratic. Exponential speedups are known for other problems, such as factoring with Shor's algorithm.\n\n1. Goal of the algorithm\nGrover's algorithm finds the one \"marked\" item in an unsorted list of N items. It uses a black-box checker (the oracle) that can only answer \"is this the right item?\", and it needs about sqrt(N) checks instead of about N.\n\n2. Steps (4 items, so 2 qubits; the marked item is assumed to be item 3, written 11 in binary)\nWe write the 2-qubit state as a vector of 4 amplitudes, one for each basis pattern, in the order [00, 01, 10, 11]. The probability of measuring a pattern is its amplitude squared.\n\nStep 1 - Initialise. Both qubits start at 0.\n   State: [1, 0, 0, 0]  (certainly 00)\n\nStep 2 - Create an equal superposition. Apply a Hadamard gate to each qubit.\n   State: [1/2, 1/2, 1/2, 1/2]\n   Each item now has probability (1/2)^2 = 1/4, the same as a random guess.\n\nStep 3 - Oracle (one query). The oracle flips the sign of the marked item's amplitude and leaves the others alone. The probabilities do not change yet, because (-1/2)^2 = 1/4, but the sign is now different.\n   State: [1/2, 1/2, 1/2, -1/2]\n\nStep 4 - Diffusion (\"inversion about the mean\"). Every amplitude a becomes (2 * mean - a).\n   Mean = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4, so 2 * mean = 1/2.\n   Unmarked items: 1/2 - 1/2 = 0\n   Marked item: 1/2 - (-1/2) = 1\n   State: [0, 0, 0, 1]\n   (In circuit form this is: Hadamards, a phase flip on every state except 00, then Hadamards again.)\n\nSteps 3 and 4 together make one \"Grover iteration\". The usual number of iterations is about (pi/4) * sqrt(N). For N = 4 that is about 1.57, which rounds to 1, and for N = 4 one iteration happens to be exactly enough.\n\n3. Final measurement result with probabilities\nIn bra-ket notation (|x> just means \"the basis state labelled x\"), the final state is\n   |psi> = 0|00> + 0|01> + 0|10> + 1|11> = |11>\nMeasuring both qubits gives:\n   P(00) = 0,  P(01) = 0,  P(10) = 0,  P(11) = 1\nSo for N = 4 we find the marked item with certainty (100%) after a single oracle query. A classical search that checks items one at a time needs more than 2 checks on average (about 2.25 if you skip checking the last remaining item, otherwise 2.5). For larger N, Grover's success probability is usually close to 1 but not exactly 1.\n\n4. Common misconception\nGrover does not give an exponential speedup. It is a provably optimal quadratic speedup (about sqrt(N) versus N queries), and running more iterations than needed actually lowers the success probability instead of improving it.\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"grover2\", \"params\": {\"marked\": \"11\"}, \"probabilities\": {\"00\": 0.0, \"01\": 0.0, \"10\": 0.0, \"11\": 1.0}, \"found_in_text\": true}"
+    }
+  ]
+}

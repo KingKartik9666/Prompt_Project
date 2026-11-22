@@ -1,0 +1,1 @@
+{"algorithm": "deutsch_jozsa", "params": {"n": 2, "f_kind": "constant0"}, "probabilities": {"00": 1.0, "01": 0.0, "10": 0.0, "11": 0.0}, "found_in_text": true}

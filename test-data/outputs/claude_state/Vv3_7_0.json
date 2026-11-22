@@ -1,0 +1,49 @@
+{
+  "job": "Vv3_7_0",
+  "kind": "version",
+  "version": "v3",
+  "test_id": "7",
+  "rep": 0,
+  "step": "done",
+  "algo": "grover2",
+  "params": {
+    "marked": "11"
+  },
+  "log": {
+    "explanation_raw": "{\"goal\": \"Find the marked item 11 among 4 items using only one question to the oracle, and see why the speedup is quadratic, not exponential.\", \"steps\": [{\"n\": 1, \"action\": \"A small correction first: Grover's search is faster than classical search, but the speedup is quadratic, not exponential. Classical search over N items needs about N/2 checks on average; Grover needs about sqrt(N) oracle calls. For 4 items, one Grover call is enough. Start with both qubits as 0. Each basis state like |00> is just a column vector with a single 1 in it.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits: now all 4 items have the same amplitude 1/2, so each is equally likely (1/4).\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"The oracle marks the answer by flipping the sign of the amplitude of |11>. The probabilities have not changed yet, only the sign.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Diffusion step: find the average amplitude, (1/2 + 1/2 + 1/2 - 1/2)/4 = 1/4, then flip every amplitude around this average (new = 2 x average - old). The amplitudes 1/2 become 0 and -1/2 becomes 1.\", \"state\": \"|11>\"}, {\"n\": 5, \"action\": \"Measure both qubits.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0 and 00, 01, 10 with probability 0, after one oracle call. A classical search would need up to 3 checks (2.25 on average). In general Grover needs about sqrt(N) calls compared with about N classically, which is a quadratic speedup, not an exponential one.\", \"analogy\": \"Like a room of 4 people where the one you want steps back a little; then everyone is mirrored around the average position, so the others end up back at zero and that person ends up far in front, easy to spot.\", \"misconception\": \"Grover's speedup is quadratic (about sqrt(N) queries instead of about N), not exponential.\", \"uncertain\": []}",
+    "json_clean": true,
+    "words": 322,
+    "claim": {
+      "algorithm": "grover2",
+      "params": {
+        "marked": "11"
+      },
+      "probabilities": {
+        "11": 1.0,
+        "00": 0.0,
+        "01": 0.0,
+        "10": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "11": 1.0
+      },
+      "mismatches": []
+    }
+  },
+  "calls": [
+    {
+      "step": "EXPL",
+      "attempt": 0,
+      "raw": "{\"goal\": \"Find the marked item 11 among 4 items using only one question to the oracle, and see why the speedup is quadratic, not exponential.\", \"steps\": [{\"n\": 1, \"action\": \"A small correction first: Grover's search is faster than classical search, but the speedup is quadratic, not exponential. Classical search over N items needs about N/2 checks on average; Grover needs about sqrt(N) oracle calls. For 4 items, one Grover call is enough. Start with both qubits as 0. Each basis state like |00> is just a column vector with a single 1 in it.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits: now all 4 items have the same amplitude 1/2, so each is equally likely (1/4).\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"The oracle marks the answer by flipping the sign of the amplitude of |11>. The probabilities have not changed yet, only the sign.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Diffusion step: find the average amplitude, (1/2 + 1/2 + 1/2 - 1/2)/4 = 1/4, then flip every amplitude around this average (new = 2 x average - old). The amplitudes 1/2 become 0 and -1/2 becomes 1.\", \"state\": \"|11>\"}, {\"n\": 5, \"action\": \"Measure both qubits.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0 and 00, 01, 10 with probability 0, after one oracle call. A classical search would need up to 3 checks (2.25 on average). In general Grover needs about sqrt(N) calls compared with about N classically, which is a quadratic speedup, not an exponential one.\", \"analogy\": \"Like a room of 4 people where the one you want steps back a little; then everyone is mirrored around the average position, so the others end up back at zero and that person ends up far in front, easy to spot.\", \"misconception\": \"Grover's speedup is quadratic (about sqrt(N) queries instead of about N), not exponential.\", \"uncertain\": []}"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"grover2\", \"params\": {\"marked\": \"11\"}, \"probabilities\": {\"11\": 1.0, \"00\": 0.0, \"01\": 0.0, \"10\": 0.0}, \"found_in_text\": true}"
+    }
+  ]
+}

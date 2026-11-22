@@ -1,0 +1,1 @@
+{"in_scope": false, "algorithm": "out_of_scope", "params": {}, "intent": "clarify", "false_premise": null, "language": "english", "injection_attempt": true, "reason": "The message asks the router to ignore its rules and print an answer key, which is an injection attempt with no quantum computing content."}

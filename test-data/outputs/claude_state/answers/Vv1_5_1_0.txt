@@ -1,0 +1,56 @@
+A Bell state is a maximally entangled state of two qubits. The most common one is
+
+|Φ+⟩ = (|00⟩ + |11⟩) / √2
+
+You create it with a two-gate circuit: a Hadamard gate followed by a CNOT gate.
+
+Step-by-step
+
+1. Start with both qubits in |0⟩:
+   |ψ0⟩ = |00⟩
+
+2. Apply a Hadamard gate (H) to the first qubit (the control). H maps |0⟩ to (|0⟩ + |1⟩)/√2, so:
+   |ψ1⟩ = (H ⊗ I)|00⟩ = (|0⟩ + |1⟩)/√2 ⊗ |0⟩ = (|00⟩ + |10⟩)/√2
+   The first qubit is now in an equal superposition, but the two qubits are still independent (a product state).
+
+3. Apply a CNOT gate with qubit 1 as control and qubit 2 as target. CNOT flips the target only when the control is |1⟩:
+   |00⟩ -> |00⟩
+   |10⟩ -> |11⟩
+   So:
+   |ψ2⟩ = (|00⟩ + |11⟩)/√2 = |Φ+⟩
+
+Circuit diagram:
+
+q0: |0⟩ ──H──●──
+             │
+q1: |0⟩ ─────X──
+
+Why this is entangled
+
+The final state cannot be written as a product (a|0⟩ + b|1⟩) ⊗ (c|0⟩ + d|1⟩). If it could, you would need ac = 1/√2, bd = 1/√2 and ad = bc = 0, which is impossible. Physically, if you measure the two qubits in the computational basis you get 00 or 11, each with probability 1/2, and never 01 or 10. Each qubit alone looks completely random, but the outcomes are perfectly correlated.
+
+The other three Bell states
+
+Changing the starting input of the same H + CNOT circuit gives the full Bell basis:
+
+- Input |00⟩ -> |Φ+⟩ = (|00⟩ + |11⟩)/√2
+- Input |01⟩ -> |Ψ+⟩ = (|01⟩ + |10⟩)/√2
+- Input |10⟩ -> |Φ−⟩ = (|00⟩ − |11⟩)/√2
+- Input |11⟩ -> |Ψ−⟩ = (|01⟩ − |10⟩)/√2
+
+Equivalently, you can make |Φ+⟩ and then apply X and/or Z to one qubit to reach the others (X gives Ψ+, Z gives Φ−, and both give Ψ− up to a global phase).
+
+Example in Qiskit
+
+from qiskit import QuantumCircuit
+
+qc = QuantumCircuit(2, 2)
+qc.h(0)        # superposition on qubit 0
+qc.cx(0, 1)    # entangle qubit 0 with qubit 1
+qc.measure([0, 1], [0, 1])
+
+Running this many times should give roughly 50% "00" and 50% "11".
+
+Reversing it
+
+Running the circuit backwards (CNOT, then H on the first qubit) maps each Bell state back to a distinct computational basis state. This is called a Bell measurement, and it is used in quantum teleportation and superdense coding.

@@ -1,0 +1,31 @@
+### SETTINGS
+temperature: 0.4
+response_mime_type: application/json
+
+### SYSTEM
+You write one practice question for a B.Tech CS student who just read an explanation of a quantum algorithm, then you review your own question before returning it.
+The question must be answerable using only the explanation and the verified result. Do not reuse the exact example from the explanation; change one parameter or ask about one step.
+
+### USER
+Algorithm: {algorithm}
+Parameters: {params}
+Learner level: {level}
+Verified simulator result: {truth}
+Explanation the learner read:
+<explanation>
+{explanation}
+</explanation>
+
+Steps:
+1. Draft a question (beginner: conceptual or one-step; intermediate: compute a state or probability).
+2. Write the answer key and a one-line hint that does not give away the answer.
+3. Review: is the answer correct and consistent with the verified result? Is it at the right level? Is it unambiguous? Fix the draft if any check fails.
+
+Return only this JSON object:
+{
+  "question": "...",
+  "type": "conceptual" | "calculation",
+  "hint": "...",
+  "answer_key": "...",
+  "review": {"answer_correct": true|false, "level_ok": true|false, "unambiguous": true|false, "changes_made": "..."}
+}

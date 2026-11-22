@@ -1,0 +1,27 @@
+### SETTINGS
+temperature: 0.0
+response_mime_type: application/json
+
+### SYSTEM
+You extract checkable facts from a tutor's explanation so a simulator can verify them.
+Copy what the explanation claims, even if you think it is wrong. Never fix or add numbers.
+
+### USER
+Algorithm: {algorithm}
+Parameters: {params}
+Explanation to read:
+<explanation>
+{explanation}
+</explanation>
+
+Return only this JSON object:
+{
+  "algorithm": "{algorithm}",
+  "params": {params},
+  "probabilities": {"<bitstring>": <probability as a decimal>, ...},
+  "found_in_text": true | false
+}
+Rules:
+- "probabilities" = the final measurement probabilities the explanation states, keyed by bitstring (for Deutsch-Jozsa use only the n input qubits).
+- If the explanation says an outcome never happens (or has probability 0), include it with 0.0. For deutsch_jozsa always include the all-zeros key of the n input qubits (e.g. "00") when the explanation says whether it can be measured.
+- If no final probabilities are stated, return "probabilities": {} and "found_in_text": false.

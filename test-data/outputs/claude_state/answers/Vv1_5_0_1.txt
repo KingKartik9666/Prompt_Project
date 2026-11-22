@@ -1,0 +1,1 @@
+{"algorithm": "bell", "params": {}, "probabilities": {"00": 0.5, "11": 0.5, "01": 0.0, "10": 0.0}, "found_in_text": true}

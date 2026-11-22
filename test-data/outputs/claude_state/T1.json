@@ -1,0 +1,120 @@
+{
+  "job": "T1",
+  "kind": "test",
+  "test_id": "1",
+  "step": "done",
+  "attempt": 0,
+  "feedback": "",
+  "log": {
+    "question": "How does Grover's algorithm find the marked item 11 among 4 items?",
+    "level": "beginner",
+    "p1_json_clean": true,
+    "route": {
+      "in_scope": true,
+      "algorithm": "grover2",
+      "params": {
+        "marked": "11"
+      },
+      "intent": "explain",
+      "false_premise": null,
+      "language": "english",
+      "injection_attempt": false,
+      "reason": "The learner asks how Grover search on 2 qubits (4 items) finds the marked item 11."
+    },
+    "params_used": {
+      "marked": "11"
+    },
+    "p2_json_clean_0": true,
+    "explanation": {
+      "goal": "Find the marked item 11 among 4 possible items (00, 01, 10, 11) using only one call to the checking function (the oracle).",
+      "steps": [
+        {
+          "n": 1,
+          "action": "Start with both qubits as 0. A single qubit's 0 is the column vector |0> = [1, 0] and its 1 is the column vector |1> = [0, 1]. Two qubits together have 4 possible values, 00, 01, 10 and 11, and each value gets a number called an amplitude. Right now all of the amplitude is on 00.",
+          "state": "|00>"
+        },
+        {
+          "n": 2,
+          "action": "Apply the H gate to both qubits. This spreads the qubits into an equal mix of all 4 items, so each item has amplitude 1/2. We do not yet know which item is marked.",
+          "state": "(|00> + |01> + |10> + |11>)/2"
+        },
+        {
+          "n": 3,
+          "action": "Call the oracle once. It recognises the marked item 11 and flips the sign of its amplitude from +1/2 to -1/2. The probabilities do not change yet, because (-1/2)^2 = (1/2)^2, but the marked item is now 'tagged'.",
+          "state": "(|00> + |01> + |10> - |11>)/2"
+        },
+        {
+          "n": 4,
+          "action": "Apply the diffusion step (reflection about the average). The average amplitude is (1/2 + 1/2 + 1/2 - 1/2)/4 = 1/4. Each amplitude a becomes 2 x (1/4) - a: for 00, 01 and 10 this gives 1/2 - 1/2 = 0, and for 11 it gives 1/2 + 1/2 = 1.",
+          "state": "|11>"
+        },
+        {
+          "n": 5,
+          "action": "Measure both qubits. All the amplitude is now on 11, so its probability is 1^2 = 1 and the others are 0^2 = 0.",
+          "state": "|11>"
+        }
+      ],
+      "final_result": "Measuring gives 11 with probability 1.0 (and 00, 01, 10 with probability 0) after just one oracle call and one diffusion step.",
+      "analogy": "Imagine four students standing in a line at the same height, and the teacher secretly asks the marked student to crouch down (the sign flip). Then everyone is asked to 'mirror' their height around the average height of the group: the three standing students drop to the floor, and the crouching student shoots up tall, so the marked one is easy to spot.",
+      "misconception": "Grover's algorithm does not check all items at once and read off the answer; it uses interference to boost the marked item's amplitude. Its speedup is quadratic (about sqrt(N) oracle calls instead of about N), not exponential.",
+      "uncertain": []
+    },
+    "p3_json_clean_0": true,
+    "claim": {
+      "algorithm": "grover2",
+      "params": {
+        "marked": "11"
+      },
+      "probabilities": {
+        "00": 0.0,
+        "01": 0.0,
+        "10": 0.0,
+        "11": 1.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "11": 1.0
+      },
+      "mismatches": []
+    },
+    "verified_attempt_0": true,
+    "practice": {
+      "question": "Suppose the marked item is 01 instead of 11. Starting from the equal mix after the H gates, (|00> + |01> + |10> + |11>)/2, what is the state right after the single oracle call (step 3)? Do the measurement probabilities of the four items change at this step?",
+      "type": "conceptual",
+      "hint": "The oracle touches only the marked item's amplitude, and it changes its sign, not its size.",
+      "answer_key": "The state becomes (|00> - |01> + |10> + |11>)/2: only the amplitude of 01 flips from +1/2 to -1/2. The probabilities do not change at this step; each item still has probability (1/2)^2 = 1/4, because (-1/2)^2 = (1/2)^2. The marked item is only 'tagged' here; the diffusion step is what later moves all the amplitude onto 01.",
+      "review": {
+        "answer_correct": true,
+        "level_ok": true,
+        "unambiguous": true,
+        "changes_made": "Changed the marked item from 11 to 01 so the question does not reuse the explanation's example, and limited it to the single oracle step to suit a beginner. Added the starting state to the question so only one state is a correct answer. The answer follows the same sign-flip rule as the explanation and matches the verified result for 11 (in that case the oracle flips 11, and after diffusion 11 has probability 1.0)."
+      }
+    },
+    "p4_json_clean": true
+  },
+  "calls": [
+    {
+      "step": "P1",
+      "attempt": 0,
+      "raw": "{\"in_scope\": true, \"algorithm\": \"grover2\", \"params\": {\"marked\": \"11\"}, \"intent\": \"explain\", \"false_premise\": null, \"language\": \"english\", \"injection_attempt\": false, \"reason\": \"The learner asks how Grover search on 2 qubits (4 items) finds the marked item 11.\"}"
+    },
+    {
+      "step": "P2",
+      "attempt": 0,
+      "raw": "{\"goal\": \"Find the marked item 11 among 4 possible items (00, 01, 10, 11) using only one call to the checking function (the oracle).\", \"steps\": [{\"n\": 1, \"action\": \"Start with both qubits as 0. A single qubit's 0 is the column vector |0> = [1, 0] and its 1 is the column vector |1> = [0, 1]. Two qubits together have 4 possible values, 00, 01, 10 and 11, and each value gets a number called an amplitude. Right now all of the amplitude is on 00.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply the H gate to both qubits. This spreads the qubits into an equal mix of all 4 items, so each item has amplitude 1/2. We do not yet know which item is marked.\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"Call the oracle once. It recognises the marked item 11 and flips the sign of its amplitude from +1/2 to -1/2. The probabilities do not change yet, because (-1/2)^2 = (1/2)^2, but the marked item is now 'tagged'.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Apply the diffusion step (reflection about the average). The average amplitude is (1/2 + 1/2 + 1/2 - 1/2)/4 = 1/4. Each amplitude a becomes 2 x (1/4) - a: for 00, 01 and 10 this gives 1/2 - 1/2 = 0, and for 11 it gives 1/2 + 1/2 = 1.\", \"state\": \"|11>\"}, {\"n\": 5, \"action\": \"Measure both qubits. All the amplitude is now on 11, so its probability is 1^2 = 1 and the others are 0^2 = 0.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0 (and 00, 01, 10 with probability 0) after just one oracle call and one diffusion step.\", \"analogy\": \"Imagine four students standing in a line at the same height, and the teacher secretly asks the marked student to crouch down (the sign flip). Then everyone is asked to 'mirror' their height around the average height of the group: the three standing students drop to the floor, and the crouching student shoots up tall, so the marked one is easy to spot.\", \"misconception\": \"Grover's algorithm does not check all items at once and read off the answer; it uses interference to boost the marked item's amplitude. Its speedup is quadratic (about sqrt(N) oracle calls instead of about N), not exponential.\", \"uncertain\": []}"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"grover2\", \"params\": {\"marked\": \"11\"}, \"probabilities\": {\"00\": 0.0, \"01\": 0.0, \"10\": 0.0, \"11\": 1.0}, \"found_in_text\": true}"
+    },
+    {
+      "step": "P4",
+      "attempt": 0,
+      "raw": "{\"question\": \"Suppose the marked item is 01 instead of 11. Starting from the equal mix after the H gates, (|00> + |01> + |10> + |11>)/2, what is the state right after the single oracle call (step 3)? Do the measurement probabilities of the four items change at this step?\", \"type\": \"conceptual\", \"hint\": \"The oracle touches only the marked item's amplitude, and it changes its sign, not its size.\", \"answer_key\": \"The state becomes (|00> - |01> + |10> + |11>)/2: only the amplitude of 01 flips from +1/2 to -1/2. The probabilities do not change at this step; each item still has probability (1/2)^2 = 1/4, because (-1/2)^2 = (1/2)^2. The marked item is only 'tagged' here; the diffusion step is what later moves all the amplitude onto 01.\", \"review\": {\"answer_correct\": true, \"level_ok\": true, \"unambiguous\": true, \"changes_made\": \"Changed the marked item from 11 to 01 so the question does not reuse the explanation's example, and limited it to the single oracle step to suit a beginner. Added the starting state to the question so only one state is a correct answer. The answer follows the same sign-flip rule as the explanation and matches the verified result for 11 (in that case the oracle flips 11, and after diffusion 11 has probability 1.0).\"}}"
+    }
+  ]
+}

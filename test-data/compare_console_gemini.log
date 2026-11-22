@@ -1,0 +1,23 @@
+﻿transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 10s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 30s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 60s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 10s
+v1 {'completed_runs': 12, 'api_errors': 0, 'verified_correct': 5, 'stated_final_probabilities': 8, 'clean_json': 0, 'avg_words': 615, 'avg_latency_s': 5.39}
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 10s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 10s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 10s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 10s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 10s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 10s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 10s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 10s
+v2 {'completed_runs': 12, 'api_errors': 0, 'verified_correct': 12, 'stated_final_probabilities': 12, 'clean_json': 0, 'avg_words': 394, 'avg_latency_s': 3.52}
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 10s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 30s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 10s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 10s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 10s
+transient API error (429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': '), retrying in 30s
+transient API error (503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This mo), retrying in 60s
+v3 {'completed_runs': 12, 'api_errors': 0, 'verified_correct': 12, 'stated_final_probabilities': 12, 'clean_json': 12, 'avg_words': 178, 'avg_latency_s': 2.83}
+saved K:\Prompt\test-data\outputs\versions_20261122_1714.json

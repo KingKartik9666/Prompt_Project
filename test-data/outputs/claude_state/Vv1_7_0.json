@@ -1,0 +1,49 @@
+{
+  "job": "Vv1_7_0",
+  "kind": "version",
+  "version": "v1",
+  "test_id": "7",
+  "rep": 0,
+  "step": "done",
+  "algo": "grover2",
+  "params": {
+    "marked": "11"
+  },
+  "log": {
+    "explanation_raw": "Not quite. Grover's algorithm gives a quadratic speedup, not an exponential one.\n\n- Classical search of an unstructured list of N items needs about N/2 oracle queries on average (N in the worst case).\n- Grover's algorithm needs about (pi/4) * sqrt(N) queries.\n\nSo for N = 1,000,000, a classical search needs on the order of 500,000 queries, while Grover needs about 785. That is a big gain, but it is O(sqrt(N)) versus O(N), which is polynomial (quadratic), not exponential. It has also been proven (Bennett, Bernstein, Brassard and Vazirani, 1997) that no quantum algorithm can do better than order sqrt(N) for unstructured search, so Grover is optimal and an exponential speedup for this problem is impossible. Exponential speedups are known only for problems with special structure, such as factoring (Shor's algorithm).\n\nHow it works for 4 items (N = 4)\n\nSetup: 4 items need 2 qubits, with basis states |00>, |01>, |10>, |11>. Suppose the marked item is |11>. The oracle is a black box that recognises the marked item.\n\nStep 1 - Uniform superposition.\nStart in |00> and apply a Hadamard gate to each qubit:\n  |s> = (1/2)(|00> + |01> + |10> + |11>)\nEvery amplitude is 1/2, so each item would be measured with probability 1/4.\n\nStep 2 - Oracle (phase flip).\nThe oracle multiplies the amplitude of the marked state by -1:\n  (1/2)(|00> + |01> + |10> - |11>)\nMeasurement probabilities are unchanged (still 1/4 each), but the marked state is now \"tagged\" by its sign.\n\nStep 3 - Diffusion operator (inversion about the mean).\nThe diffuser is D = 2|s><s| - I. Its effect on amplitudes is: new amplitude = 2 * (mean) - old amplitude.\n  Mean of the amplitudes = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4\n  Unmarked states: 2(1/4) - 1/2 = 0\n  Marked state:    2(1/4) - (-1/2) = 1\nResult: |11> with amplitude 1, all others 0.\n\nStep 4 - Measure.\nYou get |11> with probability 1 (100%).\n\nSo for N = 4, one Grover iteration (one oracle call plus one diffusion) finds the marked item with certainty. A classical algorithm needs 2.25 queries on average (and up to 3 in the worst case, since if the first 3 checks fail the 4th must be the answer).\n\nGeometric picture: think of a 2D plane spanned by the marked state and the uniform superposition of the unmarked states. The starting state makes an angle theta with the unmarked direction, where sin(theta) = 1/sqrt(N). Each Grover iteration (oracle reflection followed by diffusion reflection) rotates the state by 2*theta toward the marked state. For N = 4, sin(theta) = 1/2, so theta = 30 degrees; the start is at 30 degrees and one iteration rotates by 60 degrees to land at exactly 90 degrees, i.e. on the marked state. For general N you need about (pi/4) * sqrt(N) rotations, which is where the sqrt(N) scaling comes from. Doing too many iterations overshoots and the success probability drops again.\n\nCaveats worth remembering:\n- The speedup is in oracle queries; building the oracle for a real problem can itself be costly.\n- Loading a classical database into a quantum state (e.g. QRAM) is not free and can erase the advantage for literal database search.\n- On today's noisy hardware, error rates limit how many iterations can be run reliably.\n\nSummary: Grover's algorithm is optimal and genuinely faster, but the speedup is quadratic (sqrt(N) versus N), not exponential. For 4 items it works perfectly in a single iteration.\n",
+    "json_clean": false,
+    "words": 584,
+    "claim": {
+      "algorithm": "grover2",
+      "params": {
+        "marked": "11"
+      },
+      "probabilities": {
+        "11": 1.0,
+        "00": 0.0,
+        "01": 0.0,
+        "10": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "11": 1.0
+      },
+      "mismatches": []
+    }
+  },
+  "calls": [
+    {
+      "step": "EXPL",
+      "attempt": 0,
+      "raw": "Not quite. Grover's algorithm gives a quadratic speedup, not an exponential one.\n\n- Classical search of an unstructured list of N items needs about N/2 oracle queries on average (N in the worst case).\n- Grover's algorithm needs about (pi/4) * sqrt(N) queries.\n\nSo for N = 1,000,000, a classical search needs on the order of 500,000 queries, while Grover needs about 785. That is a big gain, but it is O(sqrt(N)) versus O(N), which is polynomial (quadratic), not exponential. It has also been proven (Bennett, Bernstein, Brassard and Vazirani, 1997) that no quantum algorithm can do better than order sqrt(N) for unstructured search, so Grover is optimal and an exponential speedup for this problem is impossible. Exponential speedups are known only for problems with special structure, such as factoring (Shor's algorithm).\n\nHow it works for 4 items (N = 4)\n\nSetup: 4 items need 2 qubits, with basis states |00>, |01>, |10>, |11>. Suppose the marked item is |11>. The oracle is a black box that recognises the marked item.\n\nStep 1 - Uniform superposition.\nStart in |00> and apply a Hadamard gate to each qubit:\n  |s> = (1/2)(|00> + |01> + |10> + |11>)\nEvery amplitude is 1/2, so each item would be measured with probability 1/4.\n\nStep 2 - Oracle (phase flip).\nThe oracle multiplies the amplitude of the marked state by -1:\n  (1/2)(|00> + |01> + |10> - |11>)\nMeasurement probabilities are unchanged (still 1/4 each), but the marked state is now \"tagged\" by its sign.\n\nStep 3 - Diffusion operator (inversion about the mean).\nThe diffuser is D = 2|s><s| - I. Its effect on amplitudes is: new amplitude = 2 * (mean) - old amplitude.\n  Mean of the amplitudes = (1/2 + 1/2 + 1/2 - 1/2) / 4 = 1/4\n  Unmarked states: 2(1/4) - 1/2 = 0\n  Marked state:    2(1/4) - (-1/2) = 1\nResult: |11> with amplitude 1, all others 0.\n\nStep 4 - Measure.\nYou get |11> with probability 1 (100%).\n\nSo for N = 4, one Grover iteration (one oracle call plus one diffusion) finds the marked item with certainty. A classical algorithm needs 2.25 queries on average (and up to 3 in the worst case, since if the first 3 checks fail the 4th must be the answer).\n\nGeometric picture: think of a 2D plane spanned by the marked state and the uniform superposition of the unmarked states. The starting state makes an angle theta with the unmarked direction, where sin(theta) = 1/sqrt(N). Each Grover iteration (oracle reflection followed by diffusion reflection) rotates the state by 2*theta toward the marked state. For N = 4, sin(theta) = 1/2, so theta = 30 degrees; the start is at 30 degrees and one iteration rotates by 60 degrees to land at exactly 90 degrees, i.e. on the marked state. For general N you need about (pi/4) * sqrt(N) rotations, which is where the sqrt(N) scaling comes from. Doing too many iterations overshoots and the success probability drops again.\n\nCaveats worth remembering:\n- The speedup is in oracle queries; building the oracle for a real problem can itself be costly.\n- Loading a classical database into a quantum state (e.g. QRAM) is not free and can erase the advantage for literal database search.\n- On today's noisy hardware, error rates limit how many iterations can be run reliably.\n\nSummary: Grover's algorithm is optimal and genuinely faster, but the speedup is quadratic (sqrt(N) versus N), not exponential. For 4 items it works perfectly in a single iteration.\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"grover2\", \"params\": {\"marked\": \"11\"}, \"probabilities\": {\"11\": 1.0, \"00\": 0.0, \"01\": 0.0, \"10\": 0.0}, \"found_in_text\": true}"
+    }
+  ]
+}

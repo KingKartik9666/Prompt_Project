@@ -1,0 +1,46 @@
+{
+  "job": "Vv2_5_0",
+  "kind": "version",
+  "version": "v2",
+  "test_id": "5",
+  "rep": 0,
+  "step": "done",
+  "algo": "bell",
+  "params": {},
+  "log": {
+    "explanation_raw": "1. Goal of the algorithm\nThe goal is to take two qubits that start in a plain, unentangled state and put them into a Bell state, the simplest example of two qubits that are entangled, so that measuring one tells you the outcome of the other. It is a building block (used in quantum teleportation, superdense coding and entanglement-based key distribution), not a speedup algorithm, so it gives no exponential speedup over anything.\n\n2. Steps\nNotation for now: a two-qubit state is a vector of 4 amplitudes, one for each basis outcome in the order 00, 01, 10, 11 (first digit = qubit A, second digit = qubit B). The probability of an outcome is the squared magnitude of its amplitude.\n\nStep 1. Start both qubits in 0.\nState: amplitudes (1, 0, 0, 0) -> the system is definitely \"00\".\n\nStep 2. Apply a Hadamard gate H to qubit A only.\nH is the 2x2 matrix (1/sqrt2) * [[1, 1], [1, -1]]. It turns qubit A's \"0\" into an equal mix of 0 and 1, while qubit B stays 0.\nState: amplitudes (1/sqrt2, 0, 1/sqrt2, 0) -> an equal superposition of \"00\" and \"10\".\nThis state is still NOT entangled: it is just (qubit A in an equal mix of 0 and 1) times (qubit B = 0), so you could describe each qubit separately.\n\nStep 3. Apply a CNOT gate with qubit A as control and qubit B as target.\nCNOT flips qubit B only when qubit A is 1. As a 4x4 matrix it swaps the amplitudes of \"10\" and \"11\" and leaves \"00\" and \"01\" alone.\nSo \"00\" stays \"00\", and \"10\" becomes \"11\".\nState: amplitudes (1/sqrt2, 0, 0, 1/sqrt2).\nNow introducing bra-ket notation, where |00> just means \"the basis vector for outcome 00\":\nState = (1/sqrt2)|00> + (1/sqrt2)|11> = (|00> + |11>) / sqrt2\nThis is the Bell state usually called |Phi+>. It cannot be written as (state of A) times (state of B), which is exactly what \"entangled\" means.\n\n3. Final measurement result with probabilities\nMeasuring both qubits in the standard (computational) basis on the state (|00> + |11>)/sqrt2:\n- 00 with probability |1/sqrt2|^2 = 1/2 (50%)\n- 11 with probability |1/sqrt2|^2 = 1/2 (50%)\n- 01 with probability 0\n- 10 with probability 0\nEach individual qubit looks like a fair coin flip, but the two results always agree. If you measure only qubit A and get 0, qubit B will be 0 when measured; if A gives 1, B gives 1. On a real noisy device you would see small nonzero counts for 01 and 10 because of gate and readout errors; the exact amount depends on the hardware, so I cannot give a precise number.\n(Variants: starting from 01, 10 or 11 instead of 00 gives the other three Bell states, (|01> + |10>)/sqrt2, (|00> - |11>)/sqrt2 and (|01> - |10>)/sqrt2.)\n\n4. Common misconception\nEntanglement does not let you send information faster than light: the person holding qubit A cannot choose their outcome, so qubit B's results alone look completely random until the two sides compare notes over an ordinary channel.\n",
+    "json_clean": false,
+    "words": 519,
+    "claim": {
+      "algorithm": "bell",
+      "params": {},
+      "probabilities": {
+        "00": 0.5,
+        "11": 0.5,
+        "01": 0.0,
+        "10": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "00": 0.5,
+        "11": 0.5
+      },
+      "mismatches": []
+    }
+  },
+  "calls": [
+    {
+      "step": "EXPL",
+      "attempt": 0,
+      "raw": "1. Goal of the algorithm\nThe goal is to take two qubits that start in a plain, unentangled state and put them into a Bell state, the simplest example of two qubits that are entangled, so that measuring one tells you the outcome of the other. It is a building block (used in quantum teleportation, superdense coding and entanglement-based key distribution), not a speedup algorithm, so it gives no exponential speedup over anything.\n\n2. Steps\nNotation for now: a two-qubit state is a vector of 4 amplitudes, one for each basis outcome in the order 00, 01, 10, 11 (first digit = qubit A, second digit = qubit B). The probability of an outcome is the squared magnitude of its amplitude.\n\nStep 1. Start both qubits in 0.\nState: amplitudes (1, 0, 0, 0) -> the system is definitely \"00\".\n\nStep 2. Apply a Hadamard gate H to qubit A only.\nH is the 2x2 matrix (1/sqrt2) * [[1, 1], [1, -1]]. It turns qubit A's \"0\" into an equal mix of 0 and 1, while qubit B stays 0.\nState: amplitudes (1/sqrt2, 0, 1/sqrt2, 0) -> an equal superposition of \"00\" and \"10\".\nThis state is still NOT entangled: it is just (qubit A in an equal mix of 0 and 1) times (qubit B = 0), so you could describe each qubit separately.\n\nStep 3. Apply a CNOT gate with qubit A as control and qubit B as target.\nCNOT flips qubit B only when qubit A is 1. As a 4x4 matrix it swaps the amplitudes of \"10\" and \"11\" and leaves \"00\" and \"01\" alone.\nSo \"00\" stays \"00\", and \"10\" becomes \"11\".\nState: amplitudes (1/sqrt2, 0, 0, 1/sqrt2).\nNow introducing bra-ket notation, where |00> just means \"the basis vector for outcome 00\":\nState = (1/sqrt2)|00> + (1/sqrt2)|11> = (|00> + |11>) / sqrt2\nThis is the Bell state usually called |Phi+>. It cannot be written as (state of A) times (state of B), which is exactly what \"entangled\" means.\n\n3. Final measurement result with probabilities\nMeasuring both qubits in the standard (computational) basis on the state (|00> + |11>)/sqrt2:\n- 00 with probability |1/sqrt2|^2 = 1/2 (50%)\n- 11 with probability |1/sqrt2|^2 = 1/2 (50%)\n- 01 with probability 0\n- 10 with probability 0\nEach individual qubit looks like a fair coin flip, but the two results always agree. If you measure only qubit A and get 0, qubit B will be 0 when measured; if A gives 1, B gives 1. On a real noisy device you would see small nonzero counts for 01 and 10 because of gate and readout errors; the exact amount depends on the hardware, so I cannot give a precise number.\n(Variants: starting from 01, 10 or 11 instead of 00 gives the other three Bell states, (|01> + |10>)/sqrt2, (|00> - |11>)/sqrt2 and (|01> - |10>)/sqrt2.)\n\n4. Common misconception\nEntanglement does not let you send information faster than light: the person holding qubit A cannot choose their outcome, so qubit B's results alone look completely random until the two sides compare notes over an ordinary channel.\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"bell\", \"params\": {}, \"probabilities\": {\"00\": 0.5, \"11\": 0.5, \"01\": 0.0, \"10\": 0.0}, \"found_in_text\": true}"
+    }
+  ]
+}

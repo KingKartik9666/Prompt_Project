@@ -1,0 +1,8 @@
+feedback sent on attempt 1: Verifier feedback: a simulator found these errors in your previous answer: 01: claimed 0.5, simulated 0.0; 11: claimed 0.5, simulated 1.0. Correct result: {'11': 1.0}. Fix the explanation.
+PASS attempt 0 flagged by simulator
+PASS P2 called twice
+PASS attempt 0 had no feedback
+PASS attempt 1 got verifier feedback
+PASS attempt 1 verified
+PASS P4 ran after repair
+ALL PASS

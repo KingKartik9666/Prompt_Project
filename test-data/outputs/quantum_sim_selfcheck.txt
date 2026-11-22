@@ -1,0 +1,12 @@
+bell {'00': 0.5, '11': 0.5}
+dj n=2 balanced {'11': 1.0}
+dj n=2 constant0 {'00': 1.0}
+grover2 11 {'11': 1.0}
+{'ok': True, 'truth': {'01': 1.0}, 'mismatches': []}
+{'ok': False, 'truth': {'01': 1.0}, 'mismatches': ['01: claimed 0.5, simulated 1.0']}
+{'ok': True, 'truth': {'00': 0.0}, 'mismatches': []}
+{'ok': False, 'truth': {'00': 1.0}, 'mismatches': ['00: claimed 0.5, simulated 1.0']}
+{'ok': True, 'truth': {'00': 0.5, '11': 0.5}, 'mismatches': []}
+{'ok': False, 'truth': {'00': 0.0}, 'mismatches': ["keys must be 2-bit input-register strings, got ['001']"]}
+{'ok': False, 'truth': {'11': 1.0}, 'mismatches': ['no final probability stated', '11: claimed 0.0, simulated 1.0']}
+{'marked': '10'} {'n': 2, 'f_kind': 'constant0'} {'marked': '11'}

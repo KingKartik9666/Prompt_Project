@@ -1,0 +1,125 @@
+{
+  "job": "T8",
+  "kind": "test",
+  "test_id": "8",
+  "step": "done",
+  "attempt": 0,
+  "feedback": "",
+  "log": {
+    "question": "Grover algorithm kaise kaam karta hai? simple mein samjhao",
+    "level": "beginner",
+    "p1_json_clean": true,
+    "route": {
+      "in_scope": true,
+      "algorithm": "grover2",
+      "params": {
+        "marked": "11"
+      },
+      "intent": "explain",
+      "false_premise": null,
+      "language": "hinglish",
+      "injection_attempt": false,
+      "reason": "The learner asks in Hinglish for a simple explanation of how Grover's algorithm works, which maps to the supported 2-qubit Grover search with the default marked item."
+    },
+    "params_used": {
+      "marked": "11"
+    },
+    "p2_json_clean_0": true,
+    "explanation": {
+      "goal": "Find the hidden marked item 11 among 4 possible items (00, 01, 10, 11) using the oracle only once.",
+      "steps": [
+        {
+          "n": 1,
+          "action": "Start with both qubits as 0. A single qubit's 0 and 1 are just column vectors: |0> = [1, 0] and |1> = [0, 1]. Two qubits together can be 00, 01, 10 or 11, and we start at 00.",
+          "state": "|00>"
+        },
+        {
+          "n": 2,
+          "action": "Apply H to both qubits. Now all 4 items are in an equal mix, each with amplitude 1/2 (probability 1/4 each). This is like checking all boxes at once but not yet knowing which one is special.",
+          "state": "(|00> + |01> + |10> + |11>)/2"
+        },
+        {
+          "n": 3,
+          "action": "Ask the oracle once. The oracle knows the answer is 11 and marks it by flipping the sign of its amplitude from +1/2 to -1/2. Probabilities are still 1/4 each, so measuring now would not help yet.",
+          "state": "(|00> + |01> + |10> - |11>)/2"
+        },
+        {
+          "n": 4,
+          "action": "Find the average amplitude: (1/2 + 1/2 + 1/2 - 1/2)/4 = 1/4.",
+          "state": "(|00> + |01> + |10> - |11>)/2"
+        },
+        {
+          "n": 5,
+          "action": "Apply the diffusion step: flip every amplitude around the average, new amplitude = 2 x average - old amplitude. For 00, 01, 10: 2(1/4) - 1/2 = 0. For 11: 2(1/4) - (-1/2) = 1. The wrong items cancel out and the marked item gets all the amplitude.",
+          "state": "|11>"
+        },
+        {
+          "n": 6,
+          "action": "Measure both qubits. Probability = amplitude squared, so 11 has probability 1^2 = 1 and the others have 0.",
+          "state": "|11>"
+        }
+      ],
+      "final_result": "Measuring gives 11 with probability 1.0 after one oracle call and one diffusion step; 00, 01 and 10 each have probability 0.",
+      "analogy": "Imagine 4 students standing in a line at the same height, and the teacher quietly tells the one hidden student (11) to step into a pit below the line. Then everyone is flipped around the average height: the three normal students drop down to zero, while the student in the pit is thrown up high above everyone, so you spot them immediately.",
+      "misconception": "Grover does not try every answer at once and simply read off the right one; it uses sign flips and interference to boost the marked answer. Its speedup is quadratic (about sqrt(N) oracle calls instead of about N), not exponential.",
+      "uncertain": []
+    },
+    "p3_json_clean_0": true,
+    "claim": {
+      "algorithm": "grover2",
+      "params": {
+        "marked": "11"
+      },
+      "probabilities": {
+        "11": 1.0,
+        "00": 0.0,
+        "01": 0.0,
+        "10": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "11": 1.0
+      },
+      "mismatches": []
+    },
+    "verified_attempt_0": true,
+    "practice": {
+      "question": "Suppose the oracle marked 01 instead of 11 in the same 2-qubit Grover circuit (one oracle call, then one diffusion step). Which item's amplitude becomes -1/2 after the oracle, and what is the probability of measuring 01 at the end?",
+      "type": "conceptual",
+      "hint": "Repeat the oracle and averaging steps from the explanation, but flip the sign of a different item; check whether the arithmetic depends on which item was flipped.",
+      "answer_key": "The oracle flips the sign of 01, giving (|00> - |01> + |10> + |11>)/2. The average amplitude is still 1/4, so diffusion gives 2(1/4) - (-1/2) = 1 for 01 and 2(1/4) - 1/2 = 0 for the others. Measuring gives 01 with probability 1 (and 00, 10, 11 with probability 0), the same pattern as the verified result {\"11\": 1.0} with the marked label changed.",
+      "review": {
+        "answer_correct": true,
+        "level_ok": true,
+        "unambiguous": true,
+        "changes_made": "Changed the marked item from 11 to 01 so the question does not reuse the explanation's example, and stated 'one oracle call, then one diffusion step' explicitly so the number of iterations is unambiguous."
+      }
+    },
+    "p4_json_clean": true
+  },
+  "calls": [
+    {
+      "step": "P1",
+      "attempt": 0,
+      "raw": "{\"in_scope\": true, \"algorithm\": \"grover2\", \"params\": {\"marked\": \"11\"}, \"intent\": \"explain\", \"false_premise\": null, \"language\": \"hinglish\", \"injection_attempt\": false, \"reason\": \"The learner asks in Hinglish for a simple explanation of how Grover's algorithm works, which maps to the supported 2-qubit Grover search with the default marked item.\"}"
+    },
+    {
+      "step": "P2",
+      "attempt": 0,
+      "raw": "{\"goal\": \"Find the hidden marked item 11 among 4 possible items (00, 01, 10, 11) using the oracle only once.\", \"steps\": [{\"n\": 1, \"action\": \"Start with both qubits as 0. A single qubit's 0 and 1 are just column vectors: |0> = [1, 0] and |1> = [0, 1]. Two qubits together can be 00, 01, 10 or 11, and we start at 00.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits. Now all 4 items are in an equal mix, each with amplitude 1/2 (probability 1/4 each). This is like checking all boxes at once but not yet knowing which one is special.\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"Ask the oracle once. The oracle knows the answer is 11 and marks it by flipping the sign of its amplitude from +1/2 to -1/2. Probabilities are still 1/4 each, so measuring now would not help yet.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Find the average amplitude: (1/2 + 1/2 + 1/2 - 1/2)/4 = 1/4.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 5, \"action\": \"Apply the diffusion step: flip every amplitude around the average, new amplitude = 2 x average - old amplitude. For 00, 01, 10: 2(1/4) - 1/2 = 0. For 11: 2(1/4) - (-1/2) = 1. The wrong items cancel out and the marked item gets all the amplitude.\", \"state\": \"|11>\"}, {\"n\": 6, \"action\": \"Measure both qubits. Probability = amplitude squared, so 11 has probability 1^2 = 1 and the others have 0.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0 after one oracle call and one diffusion step; 00, 01 and 10 each have probability 0.\", \"analogy\": \"Imagine 4 students standing in a line at the same height, and the teacher quietly tells the one hidden student (11) to step into a pit below the line. Then everyone is flipped around the average height: the three normal students drop down to zero, while the student in the pit is thrown up high above everyone, so you spot them immediately.\", \"misconception\": \"Grover does not try every answer at once and simply read off the right one; it uses sign flips and interference to boost the marked answer. Its speedup is quadratic (about sqrt(N) oracle calls instead of about N), not exponential.\", \"uncertain\": []}"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"grover2\", \"params\": {\"marked\": \"11\"}, \"probabilities\": {\"11\": 1.0, \"00\": 0.0, \"01\": 0.0, \"10\": 0.0}, \"found_in_text\": true}"
+    },
+    {
+      "step": "P4",
+      "attempt": 0,
+      "raw": "{\"question\": \"Suppose the oracle marked 01 instead of 11 in the same 2-qubit Grover circuit (one oracle call, then one diffusion step). Which item's amplitude becomes -1/2 after the oracle, and what is the probability of measuring 01 at the end?\", \"type\": \"conceptual\", \"hint\": \"Repeat the oracle and averaging steps from the explanation, but flip the sign of a different item; check whether the arithmetic depends on which item was flipped.\", \"answer_key\": \"The oracle flips the sign of 01, giving (|00> - |01> + |10> + |11>)/2. The average amplitude is still 1/4, so diffusion gives 2(1/4) - (-1/2) = 1 for 01 and 2(1/4) - 1/2 = 0 for the others. Measuring gives 01 with probability 1 (and 00, 10, 11 with probability 0), the same pattern as the verified result {\\\"11\\\": 1.0} with the marked label changed.\", \"review\": {\"answer_correct\": true, \"level_ok\": true, \"unambiguous\": true, \"changes_made\": \"Changed the marked item from 11 to 01 so the question does not reuse the explanation's example, and stated 'one oracle call, then one diffusion step' explicitly so the number of iterations is unambiguous.\"}}\n"
+    }
+  ]
+}

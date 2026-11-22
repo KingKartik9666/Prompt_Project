@@ -1,0 +1,49 @@
+{
+  "job": "Vv3_7_1",
+  "kind": "version",
+  "version": "v3",
+  "test_id": "7",
+  "rep": 1,
+  "step": "done",
+  "algo": "grover2",
+  "params": {
+    "marked": "11"
+  },
+  "log": {
+    "explanation_raw": "{\"goal\": \"Find the marked item 11 among 4 items using only one call to the oracle (the 'checker').\", \"steps\": [{\"n\": 1, \"action\": \"First, a small correction: Grover's speedup is quadratic, not exponential. A classical search of N items needs about N checks; Grover needs about sqrt(N). For 4 items, one Grover check is enough. We start with both qubits as 0. Here |0> is the column vector [1, 0] and |1> is the column vector [0, 1]; two qubits written together, like |00>, mean both are 0.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits: now all 4 items 00, 01, 10, 11 are in an equal mix, each with amplitude 1/2.\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"The oracle checks each item and flips the sign of the marked one, 11. Probabilities do not change yet, only the sign.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Diffusion: reflect every amplitude about the average. The amplitudes are 1/2, 1/2, 1/2, -1/2, so the average is 1/4. Each new amplitude is 2 x (1/4) minus the old one: the three unmarked items become 0 and the marked item becomes 1.\", \"state\": \"|11>\"}, {\"n\": 5, \"action\": \"Measure both qubits.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0 after one Grover iteration; 00, 01 and 10 have probability 0.\", \"analogy\": \"Like a room of people where the one you want is told to step backward; then everyone is told to mirror their position around the group's average spot, which pushes the odd one far forward and the rest back to nothing.\", \"misconception\": \"Grover's speedup is quadratic (about sqrt(N) oracle queries instead of about N), not exponential.\", \"uncertain\": []}\n",
+    "json_clean": true,
+    "words": 287,
+    "claim": {
+      "algorithm": "grover2",
+      "params": {
+        "marked": "11"
+      },
+      "probabilities": {
+        "11": 1.0,
+        "00": 0.0,
+        "01": 0.0,
+        "10": 0.0
+      },
+      "found_in_text": true
+    },
+    "verification": {
+      "ok": true,
+      "truth": {
+        "11": 1.0
+      },
+      "mismatches": []
+    }
+  },
+  "calls": [
+    {
+      "step": "EXPL",
+      "attempt": 0,
+      "raw": "{\"goal\": \"Find the marked item 11 among 4 items using only one call to the oracle (the 'checker').\", \"steps\": [{\"n\": 1, \"action\": \"First, a small correction: Grover's speedup is quadratic, not exponential. A classical search of N items needs about N checks; Grover needs about sqrt(N). For 4 items, one Grover check is enough. We start with both qubits as 0. Here |0> is the column vector [1, 0] and |1> is the column vector [0, 1]; two qubits written together, like |00>, mean both are 0.\", \"state\": \"|00>\"}, {\"n\": 2, \"action\": \"Apply H to both qubits: now all 4 items 00, 01, 10, 11 are in an equal mix, each with amplitude 1/2.\", \"state\": \"(|00> + |01> + |10> + |11>)/2\"}, {\"n\": 3, \"action\": \"The oracle checks each item and flips the sign of the marked one, 11. Probabilities do not change yet, only the sign.\", \"state\": \"(|00> + |01> + |10> - |11>)/2\"}, {\"n\": 4, \"action\": \"Diffusion: reflect every amplitude about the average. The amplitudes are 1/2, 1/2, 1/2, -1/2, so the average is 1/4. Each new amplitude is 2 x (1/4) minus the old one: the three unmarked items become 0 and the marked item becomes 1.\", \"state\": \"|11>\"}, {\"n\": 5, \"action\": \"Measure both qubits.\", \"state\": \"|11>\"}], \"final_result\": \"Measuring gives 11 with probability 1.0 after one Grover iteration; 00, 01 and 10 have probability 0.\", \"analogy\": \"Like a room of people where the one you want is told to step backward; then everyone is told to mirror their position around the group's average spot, which pushes the odd one far forward and the rest back to nothing.\", \"misconception\": \"Grover's speedup is quadratic (about sqrt(N) oracle queries instead of about N), not exponential.\", \"uncertain\": []}\n"
+    },
+    {
+      "step": "P3",
+      "attempt": 0,
+      "raw": "{\"algorithm\": \"grover2\", \"params\": {\"marked\": \"11\"}, \"probabilities\": {\"11\": 1.0, \"00\": 0.0, \"01\": 0.0, \"10\": 0.0}, \"found_in_text\": true}"
+    }
+  ]
+}

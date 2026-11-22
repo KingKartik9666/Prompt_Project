@@ -1,0 +1,1 @@
+{"algorithm": "grover2", "params": {"marked": "01"}, "probabilities": {"00": 0.0, "01": 1.0, "10": 0.0, "11": 0.0}, "found_in_text": true}
