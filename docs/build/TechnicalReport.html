@@ -1,0 +1,71 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Chica Technical Report</title><style>
+@page { size: A4; margin: 15mm 14mm 16mm 14mm; }
+body { font-family: 'Segoe UI', Calibri, Arial, sans-serif; font-size: 10.2pt; color: #111; line-height: 1.38; }
+h1 { font-size: 17pt; border-bottom: 2px solid #1f3b73; padding-bottom: 3px; color: #1f3b73; margin: 0 0 8px; }
+h1.sec { page-break-before: always; }
+h2 { font-size: 12.5pt; color: #1f3b73; margin: 14px 0 5px; }
+h3 { font-size: 11pt; margin: 12px 0 4px; }
+p { margin: 4px 0 6px; }
+table { border-collapse: collapse; width: 100%; margin: 5px 0 9px; page-break-inside: auto; }
+tr { page-break-inside: avoid; }
+th, td { border: 1px solid #9aa4b5; padding: 3px 5px; vertical-align: top; text-align: left; }
+th { background: #e8edf6; }
+table.small { font-size: 8.4pt; }
+table.kv td:first-child { width: 30%; font-weight: 600; background: #f4f6fa; }
+pre { font-family: Consolas, 'Courier New', monospace; font-size: 7.9pt; background: #f6f7f9; border: 1px solid #d5d9e0;
+      padding: 5px 7px; white-space: pre-wrap; word-break: break-word; margin: 3px 0 8px; }
+code { font-family: Consolas, monospace; font-size: 9pt; }
+.cap { font-size: 9pt; color: #333; font-style: italic; margin: 2px 0 10px; }
+.fig { text-align: center; page-break-inside: avoid; margin: 6px 0; }
+.fig img { max-width: 100%; border: 1px solid #ccc; }
+.mermaid { text-align: center; } .mermaid svg { max-height: 120mm; }
+.note { font-size: 9pt; color: #333; }
+.cover-title { font-size: 21pt; font-weight: 700; color: #1f3b73; margin: 30px 0 4px; }
+.cover-sub { font-size: 12pt; color: #333; margin-bottom: 18px; }
+.pass { color: #136c2e; font-weight: 600; } .fail { color: #a11; font-weight: 600; } .partial { color: #8a5a00; font-weight: 600; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad: true, theme: 'neutral', flowchart: {useMaxWidth: true}, themeVariables: {fontSize: '15px'}, securityLevel: 'loose'});</script>
+</head><body><h1>Technical report: AI-Based Interactive Quantum-Algorithm Learning Platform</h1>
+<p class="note">Team Chica (PE-B65-13), batch 76, faculty Sonal Kukreja. Problem S18 [SIH26140], Egreen Quanta. Repository: https://github.com/KingKartik9666/Prompt_Project</p>
+<p><b>1. Architecture.</b> A learner question and a level (beginner or intermediate) go through four prompts in <code>code/workflow.py</code>:</p>
+<ol>
+<li><b>P1 Router</b> returns JSON with the algorithm, parameters, intent, false premise, language and an injection flag. Out-of-scope messages get a redirect; injection attempts are flagged and logged.</li>
+<li><b>P2 Explainer</b> returns JSON steps with the state after each step.</li>
+<li><b>P3 Claim extractor</b> copies the final probabilities, and <code>quantum_sim.py</code> (a NumPy statevector) compares them with the simulation, with a tolerance of 0.02. On a mismatch, P2 is called once more with the simulator's feedback.</li>
+<li><b>P4 Practice</b> writes one question with a hint, an answer key and a self-review.</li>
+</ol>
+<p>Verifiable algorithms: Bell state, Deutsch-Jozsa, and Grover on 2 qubits. Others are explained and labelled unverified.</p>
+<p><b>2. Tools and models.</b></p>
+<ul>
+<li>Python, NumPy and the google-genai SDK.</li>
+<li>The prototype runs Gemini 3.5 Flash-Lite (<code>gemini-3.5-flash-lite</code>). Our runs were local; the notebook also opens in Colab (key in Colab Secrets) and runs in Docker.</li>
+<li>Because of free-tier quotas, all tests were also run on Claude Opus 5.5, with one fresh Claude Code subagent per LLM call (<code>step_runner.py</code>) and the same code-side checks.</li>
+</ul>
+<p><b>3. Prompt design.</b></p>
+<table class="small"><thead><tr><th>Prompt</th><th>Temp.</th><th>Techniques</th></tr></thead><tbody><tr><td>P1 Router</td><td>0.0</td><td>Fixed labels, JSON schema, learner text inside &lt;message&gt; tags (treated as data), injection flag</td></tr><tr><td>P2 Explainer</td><td>0.2</td><td>Chain-of-thought (state after every step), audience-aware rules per level, 2 few-shot examples, JSON, verifier-feedback slot</td></tr><tr><td>P3 Claim extractor</td><td>0.0</td><td>Narrow role: copy claims, never fix numbers; JSON. The check itself is done by code</td></tr><tr><td>P4 Practice</td><td>0.4</td><td>Draft, then answer key and hint, then self-review; JSON</td></tr></tbody></table>
+<p>The explainer was iterated v1 (one line) &rarr; v2 (role, level, fixed sections) &rarr; v3 (few-shot, JSON, temperature 0.2) &rarr; final (+ intent, DJ rule, repair slot). Results on Gemini 3.5 Flash-Lite, 12 runs each:</p>
+<ul>
+<li>Final probabilities verified: 5/12 &rarr; 12/12 &rarr; 12/12 (one v2 Deutsch-Jozsa answer was physically wrong but passed the P(00)-only check).</li>
+<li>Clean JSON: 0 &rarr; 0 &rarr; 12/12.</li>
+<li>Average length: 615 &rarr; 394 &rarr; 178 words.</li>
+</ul>
+<p><b>4. Test results</b> (13 inputs: 6 Normal, 5 Edge, 2 Invalid). The rubric is applied by a Claude grader agent (LLM-assisted).</p>
+<table class="small"><thead><tr><th>Model</th><th>Automatic checks</th><th>Rubric: Pass / Partial / Fail</th><th>Verified on first attempt</th></tr></thead><tbody><tr><td>Gemini 3.5 Flash-Lite (prototype)</td><td>12/13</td><td>4 / 5 / 4</td><td>8/8</td></tr><tr><td>Claude Opus 5.5 (cross-check)</td><td>13/13</td><td>7 / 6 / 0</td><td>9/9</td></tr></tbody></table>
+<p>Gemini failures:</p>
+<ul>
+<li>A compare question was misrouted, so it was not verified.</li>
+<li>One practice key is wrong, even though P4's self-review said it was correct.</li>
+<li>One intermediate state is unnormalised.</li>
+<li>One unverifiable Shor answer has a wrong state.</li>
+</ul>
+<p>The false premise, Hinglish, injection and invalid inputs were all handled correctly. The repair retry never fired: on every verifiable answer, the final probabilities matched the simulator on the first attempt (intermediate states are not checked; test 3 had an unnormalised one). A scripted test (<code>test_repair.py</code>) confirms its code path.</p>
+<p><b>5. Limitations.</b></p>
+<ul>
+<li>Only the explanation's final probabilities are checked: not the intermediate states, not P4's key, and only P(00) for Deutsch-Jozsa.</li>
+<li>Only three small algorithms can be verified.</li>
+<li>The rubric grader is an LLM, and there is no learner feedback yet.</li>
+<li>Free-tier quotas limited the number of repeats.</li>
+</ul>
+<p><i>Next:</i> check each step state and the practice key with the simulator, extend the simulator, grade a sample by hand, and run a small trial with classmates.</p>
+<p><b>6. Responsible use.</b> No personal data is collected. Questions go to Google's Gemini API, so learners should not type personal details. The key is never in the code or the repository. The tool is a learning aid, not a replacement for a teacher. Claude Code (Claude Opus 5.5) wrote most of the code, the prompt drafts, the test cases, the rubric and the report drafts; the team chose the problem and scope, made the design decisions and is responsible for the submission. All results come from our saved runs.</p></body></html>

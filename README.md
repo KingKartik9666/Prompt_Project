@@ -78,7 +78,7 @@ Without a key, the notebook still opens with its saved outputs, and the simulato
 | Twinkle Sahu | S24CSEU0090 | Test set, evaluation, supporting document |
 
 ## AI assistance
-Parts of the code scaffold and prompt drafts were written with an AI coding assistant (Claude Code). The cross-check test run and the rubric grading were also run through Claude Code subagents, as described above. The team reviewed the outputs and is responsible for the submission.
+We used Claude Code (Claude Opus 5.5) heavily. It wrote most of the code, the prompt drafts, the test cases, the grading rubric, the diagrams, this README and the report drafts. The cross-check test run and the rubric grading were run through Claude Code subagents, as described above. The team chose the problem, the users and the scope, made the design and tool decisions, and is responsible for the submission.
 
 ## Responsible use
 Explanations are learning aids; numerical claims are checked only for the three supported algorithms. No personal data is collected. Model: Gemini 3.5 Flash-Lite (`gemini-3.5-flash-lite`) via the `google-genai` Python SDK.

@@ -2,20 +2,23 @@
 
 ## 1. Prompt workflow
 ```mermaid
-flowchart LR
+flowchart TB
     Q[Learner question + level] --> P1[P1 Router<br/>temp 0, JSON]
-    P1 -->|out_of_scope / injection| R[Polite redirect]
+    P1 -->|in_scope = false| R[Polite redirect]
+    P1 -.->|injection_attempt flag| L[(Logged)]
     P1 -->|algorithm, params, false_premise| P2[P2 Explainer<br/>few-shot, step-by-step, temp 0.2]
     P2 --> P3[P3 Claim extractor<br/>temp 0, JSON]
     P3 --> S[NumPy simulator check]
     S -->|mismatch, 1 retry| P2
-    S -->|verified / unverified| P4[P4 Practice question<br/>+ self-review, temp 0.4]
+    P2 -->|other_quantum: no simulator| U[Labelled unverified]
+    U --> P4
+    S -->|verified| P4[P4 Practice question<br/>+ self-review, temp 0.4]
     P4 --> O[Explanation + verification badge + practice question]
 ```
 
 ## 2. Task decomposition
 ```mermaid
-flowchart TB
+flowchart LR
     T[Teach a quantum algorithm correctly] --> A[Understand the request]
     T --> B[Explain at the right level]
     T --> C[Check correctness]
@@ -28,10 +31,10 @@ flowchart TB
 
 ## 3. Input-output flow
 ```mermaid
-flowchart LR
+flowchart TB
     I1[question: text] --> P1
     I2[level: beginner/intermediate] --> P1
-    P1 -->|route JSON: algorithm, params, intent, false_premise, language| P2
+    P1 -->|route JSON: algorithm, params, intent, false_premise, language, injection_attempt| P2
     P2 -->|explanation JSON: goal, steps, final_result, misconception| P3
     P3 -->|claim JSON: probabilities| SIM[Simulator]
     SIM -->|ok, truth, mismatches| P4

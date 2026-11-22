@@ -14,7 +14,7 @@
 - Gemini free tier hit per-minute rate limits (429) during the full test run; the partial Gemini run is kept in test-data/outputs/run_20261122_1700.jsonl.
 - Testing moved to Claude (claude-opus-5-5, run as one fresh Claude Code subagent per LLM call through code/step_runner.py). The code still does template filling, parameter normalisation, the simulator check, the repair decision and logging. The released prototype keeps the Gemini API backend (code/workflow.py).
 - Claude test run (run_claude_20261122_1712.jsonl): 13/13 tests met the automatic checks; the repair loop was never triggered. Explainer versions (versions_claude_20261122_1712.json): v1, v2 and v3 were each 8/8 verified correct; clean JSON went from 0/8 (v1, v2) to 8/8 (v3), and average length from 562 to 527 to 291 words.
-- Manual review by independent graders (manual_review_claude_20261122.json): 7 Pass, 6 Partial, 0 Fail. Main weakness: P4 practice questions often copy the explanation's example and their hints nearly give the answer away. Level fit was rated "good" in only 2 of 8 outputs for each of v1, v2 and v3.
+- LLM-assisted rubric review by Claude grader agents (file name kept as manual_review_claude_20261122.json): 7 Pass, 6 Partial, 0 Fail. Main weakness: P4 practice questions often copy the explanation's example and their hints nearly give the answer away. Level fit was rated "good" in only 2 of 8 outputs for each of v1, v2 and v3.
 - Prototype notebook executed on Gemini with outputs saved; model changed to gemini-3.5-flash-lite because gemini-3.6-flash and gemini-3.5-flash reached the free-tier limit of 20 requests per day.
 - First end-to-end run (Bell state question): routed, explained, verified and practice question generated; saved in test-data/outputs/smoke_bell.json.
 
@@ -38,5 +38,15 @@
   - modes: selfcheck (no key), ask, tests, versions, notebook (JupyterLab on port 8888) and bash;
   - the image contains no .env or key and runs as a non-root user;
   - tested locally: selfcheck passes, the notebook is served and its imports work.
+
+- Report fixes after an audit of the PDF against the logs:
+  - corrected the actual-output text for tests 1, 9 and 10;
+  - P2 marked Partly working;
+  - AI-use disclosure widened;
+  - iteration log reasons labelled as design reasons (v1-v3 and final were written as a planned sequence, then measured);
+  - runs described as local;
+  - injection flag described as logged, not redirected;
+  - workflow.run() now logs models_used().
+- Removed docs/M2_report_draft.md and docs/Chica_TechnicalReport_draft.md, which the final PDFs in docs/ replace.
 
 <!-- Add a dated line each time you run tests or change a prompt, with who did it. -->

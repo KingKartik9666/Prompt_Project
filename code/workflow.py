@@ -188,6 +188,7 @@ def run(question: str, level: str = "beginner", repair: bool = True) -> dict:
     raw4, log["t_p4"] = call(FINAL["P4_practice"], algorithm=algo, params=params, level=level,
                              truth=truth if truth else "not available", explanation=json.dumps(log["explanation"]))
     log["practice"], log["p4_json_clean"] = parse_json(raw4)
+    log["models_used"] = models_used()
     return log
 
 

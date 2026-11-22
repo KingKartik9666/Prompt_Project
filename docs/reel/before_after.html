@@ -1,0 +1,86 @@
+<!doctype html><meta charset=utf-8><title>Before and after: explainer v1 vs v3</title><style>
+body{font-family:Segoe UI,Arial;margin:16px;background:#fff} h1{font-size:20px;margin:0 0 4px} .sub{color:#444;font-size:13px;margin-bottom:10px}
+.w{display:flex;gap:14px} .c{flex:1;min-width:0} h2{font-size:17px;margin:4px 0} .lab{font-size:12px;color:#555;margin:6px 0 2px}
+pre{white-space:pre-wrap;font:11.5px Consolas;border:1px solid #ccc;border-radius:4px;padding:8px;margin:0} .p{background:#f4f6fa;max-height:180px;overflow:auto} .o{max-height:560px;overflow:auto}
+</style><h1>Same question, two prompt versions: "How do you create a Bell state?" (beginner)</h1>
+<div class=sub>Real outputs from gemini-3.5-flash-lite, saved in test-data/outputs/versions_20261122_1714.json (v1 run 2, v3 run 1). Across 12 runs each: v1 verified 5/12, v3 verified 12/12 with valid JSON 12/12.</div>
+<div class=w><div class=c><h2>BEFORE: v1</h2><div class=lab>Prompt</div><pre class=p>Explain {question}</pre>
+<div class=lab>Actual output (535 words) &nbsp; <span style="background:#fde8e8;color:#a11;padding:3px 8px;border-radius:4px;font-weight:700">Simulator: FAILED: no final probability stated</span></div><pre class=o>A **Bell state** is a specific quantum state of two qubits that represents the maximum possible degree of entanglement. Named after physicist John Stewart Bell, these states are the foundation of quantum computing and quantum information theory (used in teleportation and superdense coding).
+
+There are four possible Bell states, known collectively as the Bell basis:
+
+1. $|\Phi^+\rangle = \frac{1}{\sqrt{2}}(|00\rangle + |11\rangle)$
+2. $|\Phi^-\rangle = \frac{1}{\sqrt{2}}(|00\rangle - |11\rangle)$
+3. $|\Psi^+\rangle = \frac{1}{\sqrt{2}}(|01\rangle + |10\rangle)$
+4. $|\Psi^-\rangle = \frac{1}{\sqrt{2}}(|01\rangle - |10\rangle)$
+
+To create the most common Bell state ($|\Phi^+\rangle$) in a quantum computer, you only need two standard quantum logic gates: **a Hadamard (H) gate** and a **Controlled-NOT (CNOT) gate**.
+
+Here is the step-by-step process of how it works mathematically and physically.
+
+---
+
+### Step-by-Step Guide to Creating $|\Phi^+\rangle = \frac{1}{\sqrt{2}}(|00\rangle + |11\rangle)$
+
+#### Step 1: Initialize the Qubits
+Start with two qubits, both set to the classical state of zero ($|0\rangle$). 
+* Mathematically, the combined system is written as $|00\rangle$ (meaning Qubit A is 0, and Qubit B is 0).
+
+#### Step 2: Apply a Hadamard Gate to the First Qubit
+Pass the first qubit (Qubit A) through a **Hadamard gate ($H$)**. The Hadamard gate puts a qubit into a state of superposition—giving it an equal probability of being measured as 0 or 1.
+* The state of Qubit A becomes $\frac{1}{\sqrt{2}}(|0\rangle + |1\rangle)$.
+* Because Qubit B is untouched, the combined state of the two qubits is now:
+  $$\frac{1}{\sqrt{2}}(|0\rangle + |1\rangle) \otimes |0\rangle = \frac{1}{\sqrt{2}}(|00\rangle + |10\rangle)$$
+
+#### Step 3: Apply a CNOT Gate
+Next, apply a **Controlled-NOT (CNOT) gate**, using Qubit A as the *control* qubit and Qubit B as the *target* qubit. 
+* The CNOT gate looks at the control qubit. If the control is $1$, it flips the target qubit. If the control is $0$, it does nothing.
+  * In the first half of our superposition, Qubit A is $0$, so Qubit B remains $0$ ($|00\rangle$).
+  * In the second half of our superposition, Qubit A is $1$, so Qubit B is flipped from $0$ to $1$ ($|11\rangle$).
+
+The resulting state is:
+$$\frac{1}{\sqrt{2}}(|00\rangle + |11\rangle)$$
+
+**Congratulations, you have created a Bell state!** 
+
+---
+
+### Why is this state special (Entanglement)?
+If you measure Qubit A, you have a 50% chance of getting 0 and a 50% chance of getting 1. However, *because they are entangled*, the moment you measure Qubit A and find out what it is, Qubit B is instantly determined:
+* If you measure Qubit A and get **0**, Qubit B will **always** be **0**.
+* If you measure Qubit A and get **1**, Qubit B will **always** be **1**.
+
+---
+
+### How to create the other 3 Bell states:
+By adding simple Pauli gates (X or Z gates) before or after the circuit described above, you can create all four Bell states:
+
+* **$|\Phi^+\rangle$**: $H$ on Qubit A, then CNOT.
+* **$|\Phi^-\rangle$**: $H$ on Qubit A, then CNOT, then apply a **Z gate** to Qubit A (or B).
+* **$|\Psi^+\rangle$**: $H$ on Qubit A, then CNOT, then apply an **X gate** (NOT gate) to Qubit B.
+* **$|\Psi^-\rangle$**: $H$ on Qubit A, then CNOT, then apply a **Z gate** to Qubit A *and* an **X gate** to Qubit B.</pre></div><div class=c><h2>AFTER: v3</h2><div class=lab>Prompt</div><pre class=p>You are a patient quantum computing tutor for B.Tech CS students who know linear algebra (vectors, matrices) but have not studied quantum computing.
+
+Audience rules:
+- beginner: plain words first, introduce |0&gt; and |1&gt; as &quot;column vectors&quot;, avoid tensor-product notation, at most 6 steps, one everyday analogy.
+- intermediate: use bra-ket notation, write amplitudes, name the gates&#x27; matrices, at most 8 steps.
+
+Reasoning rules:
+- Work through the circuit step by step and write the full state after every step before giving the final result.
+- Final probabilities must follow from the states you wrote.
+- If the learner holds a false belief (given as false_premise), correct it politely in the first step.
+- Grover gives a quadratic speedup, not exponential. Deutsch-Jozsa needs one oracle query.
+- If you are not sure of a fact, put it in &quot;uncertain&quot; instead of guessing.
+- Reply in simple English even if the learner wrote in Hinglish.
+
+(+ user template with 2 examples, JSON output, temperature 0.2)</pre>
+<div class=lab>Actual output (133 words) &nbsp; <span style="background:#e3f5e8;color:#136c2e;padding:3px 8px;border-radius:4px;font-weight:700">Simulator: VERIFIED</span></div><pre class=o>{
+ &quot;goal&quot;: &quot;Make two qubits that always give the same measurement result.&quot;,
+ &quot;steps&quot;: [
+  {&quot;n&quot;: 1, &quot;action&quot;: &quot;Start with both qubits as the column vector representing 0.&quot;, &quot;state&quot;: &quot;|00&gt;&quot;},
+  {&quot;n&quot;: 2, &quot;action&quot;: &quot;Apply the Hadamard (H) gate to the first qubit to put it in a balanced superposition.&quot;, &quot;state&quot;: &quot;(|00&gt; + |10&gt;)/sqrt(2)&quot;},
+  {&quot;n&quot;: 3, &quot;action&quot;: &quot;Apply the CNOT gate using the first qubit as control and second as target to entangle them.&quot;, &quot;state&quot;: &quot;(|00&gt; + |11&gt;)/sqrt(2)&quot;}
+ ],
+ &quot;final_result&quot;: &quot;Measuring gives 00 with probability 0.5 and 11 with probability 0.5; never 01 or 10.&quot;,
+ &quot;analogy&quot;: &quot;Like two magic coins that are mysteriously linked so that whenever you look at them, they always land on the exact same side, even if separated.&quot;,
+ &quot;misconception&quot;: &quot;Entanglement does not let you send messages faster than light.&quot;,
+ &quot;uncertain&quot;: []}</pre></div></div>
