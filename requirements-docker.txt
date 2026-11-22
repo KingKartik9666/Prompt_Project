@@ -1,0 +1,4 @@
+# Pinned versions for the Docker image (tested on 2026-11-22). requirements.txt stays unpinned for Colab.
+numpy==2.4.6
+google-genai==3.6.1
+jupyterlab>=4,<5

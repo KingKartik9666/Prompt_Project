@@ -4,3 +4,8 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 handoff-*.md
+
+# local build artefacts
+docs/build/*_text.txt
+docs/build/m2_guidelines_text.txt
+docs/build/form_answers.md

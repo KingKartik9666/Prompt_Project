@@ -1,0 +1,13 @@
+# Never send secrets or local clutter into the image
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.venv
+**/__pycache__
+**/*.pyc
+**/.ipynb_checkpoints
+handoff-*.md
+docs/build/img
+docs/*.pdf

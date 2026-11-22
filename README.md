@@ -28,6 +28,27 @@ python test_repair.py              # repair-retry control-flow test, no API need
 ```
 Or open the notebook in VS Code / Colab (Colab: add `GEMINI_API_KEY` in Secrets).
 
+## Run with Docker (any PC: Windows, macOS, Linux)
+Needs only [Docker Desktop](https://www.docker.com/products/docker-desktop/). The API key is never stored in the image; you pass it when you run a container.
+```bash
+git clone https://github.com/KingKartik9666/Prompt_Project.git
+cd Prompt_Project
+docker build -t s18-tutor .
+
+# 1. No key needed: simulator self-check, repair-retry test, saved test table
+docker run --rm s18-tutor
+
+# 2. Live run of the full pipeline on one question (uses your free Gemini key from https://aistudio.google.com/apikey)
+docker run --rm -e GEMINI_API_KEY=<your key> s18-tutor ask "How do you create a Bell state?" beginner
+
+# 3. The prototype notebook in JupyterLab at http://localhost:8888
+docker run --rm -p 8888:8888 -e GEMINI_API_KEY=<your key> s18-tutor notebook
+#    or: docker compose up --build   (reads GEMINI_API_KEY from your shell or a local .env file)
+
+# Other modes: tests (all 13 cases, about 40 requests) | versions (v1/v2/v3 comparison) | bash
+```
+Without a key, the notebook still opens with its saved outputs, and the simulator cells run.
+
 ## Which model produced which results
 - **Released prototype (main model):** Gemini 3.5 Flash-Lite (`gemini-3.5-flash-lite`) through the Gemini API (`code/workflow.py`, notebook).
   - Full 13-case run: `test-data/outputs/run_20261122_1710.jsonl` and `test_table_20261122_1710.md`. The automatic checks passed on 12/13; test 9 was misrouted.

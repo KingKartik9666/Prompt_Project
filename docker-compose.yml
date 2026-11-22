@@ -1,0 +1,12 @@
+# docker compose up --build   ->  JupyterLab with the prototype notebook at http://localhost:8888
+# The key is read from your shell or a local .env file (git-ignored); it is never copied into the image.
+services:
+  tutor:
+    build: .
+    image: s18-tutor
+    command: ["notebook"]
+    ports:
+      - "8888:8888"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.5-flash-lite}

@@ -34,4 +34,9 @@
 - Added code/test_repair.py: a control-flow test of the repair retry with scripted model answers (all 6 checks pass). The retry never fired in a real run.
 - Project title set to the Milestone 1 title: AI-Based Interactive Quantum-Algorithm Learning Platform.
 
+- Added Docker packaging (Dockerfile, docker/entrypoint.sh, docker-compose.yml, .dockerignore, requirements-docker.txt):
+  - modes: selfcheck (no key), ask, tests, versions, notebook (JupyterLab on port 8888) and bash;
+  - the image contains no .env or key and runs as a non-root user;
+  - tested locally: selfcheck passes, the notebook is served and its imports work.
+
 <!-- Add a dated line each time you run tests or change a prompt, with who did it. -->
