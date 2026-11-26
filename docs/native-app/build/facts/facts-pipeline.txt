@@ -1,0 +1,849 @@
+Fact file: AI pipeline, providers, prompts and key handling
+Quantum Explainer native Windows app (k:\Prompt\app). Checked against the code on 25 November 2026.
+How to read this file
+Each factual statement ends with its evidence in square brackets. Paths are relative to k:\Prompt: app/... is the Rust app, code/... and prompts/... are the Python prototype from Milestone 2. [lead-measured] marks a fact the lead measured today. [context: ...] marks an earlier result the lead reported. Nothing was built, run or sent over the network to make this file. Every statement about behaviour comes from reading the code, so it is static unless it says otherwise.
+Files read: app/crates/desktop/src/pipeline.rs, prompts.rs, gemini.rs, llm/mod.rs, llm/anthropic.rs, llm/openai.rs, config.rs and main.rs; app/crates/qcore/src/lib.rs (verifier); app/crates/ui/src/main.rs, state.rs and tutor.rs (the parts that send IPC commands and show results); code/workflow.py; code/quantum_sim.py; prompts/final/P1-P4; app/Cargo.toml and Cargo.lock; app/README.md; docs/native-app/build/test_names.txt; the ureq 3.5.2 and ureq-proto 0.7.1 sources in the local Cargo registry; and a prior security findings file (prior-findings.json, in an earlier session&apos;s scratchpad), whose items are treated as claims to check.
+1. Pipeline at a glance
+The pipeline runs P1 router, then P2 explainer, then P3 claim extractor plus a simulator check with one repair retry, then P4 practice. The file says it has the same control flow as run() in code/workflow.py. [app/crates/desktop/src/pipeline.rs:1-2]
+Every stage is streamed to the web view as a JSON event that carries the question&apos;s id. [app/crates/desktop/src/pipeline.rs:21-25]
+Each question runs on a new OS thread with a new LLM client. The provider, key and model are resolved when the question is asked, not at app start. [app/crates/desktop/src/main.rs:259, 268-275; app/crates/desktop/src/config.rs:179-184]
+The four prompts are compiled into the executable with include_str! from prompts/final/, so the app reads no prompt files at run time. [app/crates/desktop/src/prompts.rs:24-31]
+Prompt settings and template fields
+Prompt
+temperature
+response_mime_type
+Template inputs
+JSON keys the prompt asks for
+Evidence
+P1 router
+0.0
+application/json
+{level}, {question}
+in_scope, algorithm, params, intent, false_premise, language, injection_attempt, reason
+prompts/final/P1_router.txt:1-3, 18-38
+P2 explainer
+0.2
+application/json
+{algorithm}, {params}, {level}, {false_premise}, {intent}, {question}, {verifier_feedback}
+goal, steps [n, action, state], final_result, analogy, misconception, uncertain
+prompts/final/P2_explainer.txt:1-3, 22-53
+P3 claim extractor
+0.0
+application/json
+{algorithm}, {params}, {explanation}
+algorithm, params, probabilities, found_in_text
+prompts/final/P3_claim_extractor.txt:1-3, 9-27
+P4 practice
+0.4
+application/json
+{algorithm}, {params}, {level}, {truth}, {explanation}
+question, type, hint, answer_key, review {answer_correct, level_ok, unambiguous, changes_made}
+prompts/final/P4_practice.txt:1-3, 9-31
+A unit test checks that the embedded prompts parse to these four temperatures and the JSON MIME type, and that each has a system section. [app/crates/desktop/src/prompts.rs:208-219]
+Only the Gemini client sends the temperature and MIME settings: as generationConfig.temperature and generationConfig.responseMimeType, with the system text as systemInstruction. The Anthropic and OpenAI-compatible clients send neither, so with those providers the prompt SETTINGS have no effect. [app/crates/desktop/src/gemini.rs:82-99; app/crates/desktop/src/llm/anthropic.rs:3-10, 74-90; app/crates/desktop/src/llm/openai.rs:4-6, 24-31]
+P1 tells the model to treat the learner message as data and set injection_attempt when it contains instructions. [prompts/final/P1_router.txt:16]
+2. Stage by stage
+P1 router
+Inputs: the trimmed question and the level. The host maps any level other than &quot;intermediate&quot; to &quot;beginner&quot;. [app/crates/desktop/src/main.rs:254-258; app/crates/desktop/src/pipeline.rs:30-34]
+If the answer does not parse to a non-empty JSON object, the route stage is marked as an error and the run ends with the final message &quot;The router&apos;s answer was not valid JSON. Please try again.&quot; [app/crates/desktop/src/pipeline.rs:35-40]
+The UI shows any final message under the heading &quot;Not a quantum-algorithm question&quot;, so the invalid-JSON message appears under that heading too. [app/crates/ui/src/tutor.rs:250-251; app/crates/desktop/src/pipeline.rs:136-141]
+Scope is read with Python-style truthiness of in_scope. A missing algorithm becomes the text &quot;null&quot;. A non-string value is written as JSON. [app/crates/desktop/src/pipeline.rs:41-43; app/crates/desktop/src/prompts.rs:183-201]
+Out of scope: the explain, verify and practice stages are sent as skipped, and the run ends with the fixed text &quot;I can help with quantum algorithms (Bell states, Deutsch-Jozsa, Grover). Please ask a question about one of them.&quot; [app/crates/desktop/src/pipeline.rs:9-10, 51-56]
+Parameters are normalised in code. grover2: marked defaults to &quot;11&quot;, and an invalid value becomes &quot;11&quot;. deutsch_jozsa: n defaults to 2 and is clamped to 1-3; f_kind defaults to &quot;balanced&quot;, and &quot;constant&quot; maps to &quot;constant0&quot;. bell has no parameters. Any other algorithm is not verifiable. [app/crates/qcore/src/lib.rs:407-438; app/crates/desktop/src/pipeline.rs:44-45]
+The host uses only in_scope, algorithm, params, false_premise (default &quot;none&quot;) and intent (default &quot;explain&quot;). language and injection_attempt are only shown as tags in the UI. [app/crates/desktop/src/pipeline.rs:41-62; app/crates/ui/src/tutor.rs:231-236]
+The route event carries the router JSON, the normalised params, a verifiable flag, the call time in seconds and a clean flag. clean is false when the JSON had to be cut out of surrounding text. [app/crates/desktop/src/pipeline.rs:46-49; app/crates/desktop/src/prompts.rs:167-181]
+P2 explainer
+The explainer runs at most twice (attempt 0 and attempt 1). [app/crates/desktop/src/pipeline.rs:69]
+Inputs filled in: the algorithm name; the params as Python-style JSON; level; false_premise; intent; the question; and verifier_feedback, which is empty on the first attempt. [app/crates/desktop/src/pipeline.rs:63-82]
+If the answer is not a parsable, non-empty JSON value, the raw text is kept as the explanation, and the UI shows it as one paragraph. [app/crates/desktop/src/pipeline.rs:84-87; app/crates/ui/src/tutor.rs:294-295]
+If the algorithm is not verifiable, a verification event with ok: null and the note &quot;Not checkable by the simulator: shown as unverified.&quot; is sent, the verify stage is skipped, and the loop ends. The UI heading is &quot;Explained, not verified&quot;. [app/crates/desktop/src/pipeline.rs:90-94; app/crates/ui/src/tutor.rs:262-269]
+P3 claim extractor, simulator check and repair
+P3 receives the parsed explanation re-serialised as Python-style JSON, or the raw text when parsing failed. [app/crates/desktop/src/pipeline.rs:96-97]
+Only probabilities is taken from P3. The ground truth always comes from the router&apos;s normalised params, never from P3&apos;s echo of them. [app/crates/desktop/src/pipeline.rs:99-102]
+The check uses an absolute tolerance of 0.02. [app/crates/desktop/src/pipeline.rs:102; app/crates/qcore/src/lib.rs:518-557]
+Values accepted: numbers, booleans, and strings such as &quot;0.5&quot;, &quot;1/2&quot; and &quot;50%&quot;. Keys are normalised by keeping only 0 and 1 characters. An unparsable value is a mismatch. No probabilities at all gives &quot;no final probability stated&quot;. For Deutsch-Jozsa only P(all zeros) on the n input bits is compared, plus checks on key length and on the sum. [app/crates/qcore/src/lib.rs:395-398, 440-458, 519-557]
+Ground truth is the simulated probabilities rounded to 6 decimals with zero entries dropped, the same rule as the Python simulator. [app/crates/qcore/src/lib.rs:122-141; code/quantum_sim.py:30-33]
+On a pass, the loop ends. On a fail, the feedback is &quot;Verifier feedback: a simulator found these errors in your previous answer: &lt;mismatches joined by &apos;; &apos;&gt;. Correct result: &lt;truth as a Python dict repr&gt;. Fix the explanation.&quot; P2 then runs once more. [app/crates/desktop/src/pipeline.rs:106-113; app/crates/qcore/src/lib.rs:474-478]
+A repair event is sent only after the first failure. UI headings: &quot;Verified by the simulator&quot;, &quot;Corrected, then verified&quot;, or &quot;The numbers do not match&quot;. [app/crates/desktop/src/pipeline.rs:114-116; app/crates/ui/src/tutor.rs:273-277]
+After a failed second attempt there is no third attempt. The run goes on to P4 with the simulator truth. [app/crates/desktop/src/pipeline.rs:69, 103, 119-131]
+P4 practice and the end of a run
+Inputs: algorithm, params, level, truth and explanation. truth is the simulator result as JSON, or &quot;not available&quot; when no check ran. The explanation is serialised as JSON, so a raw-text explanation becomes a JSON string. [app/crates/desktop/src/pipeline.rs:120-131]
+The parsed output is sent as a practice event, with null when it does not parse. The UI shows question, hint and answer_key only when the data is an object, so an unparsable P4 answer silently produces no practice section. [app/crates/desktop/src/pipeline.rs:132-135; app/crates/ui/src/tutor.rs:350-364]
+The done event carries final (null on a normal run), the models used, and the total seconds rounded to 0.1 s. The UI footer reads &quot;Answered by {models} in {seconds} s&quot;. [app/crates/desktop/src/pipeline.rs:139-141; app/crates/ui/src/tutor.rs:369-372]
+An error at any stage ends the run with an error event. The UI marks the active stages as failed. Its error verdict is checked first, so it replaces anything already shown, including a verification result. [app/crates/desktop/src/pipeline.rs:140-143; app/crates/ui/src/state.rs:204-213; app/crates/ui/src/tutor.rs:245-249]
+3. LLM call counts per path
+Path
+P1
+P2
+P3
+P4
+Logical calls
+Evidence
+Router answer not valid JSON
+1
+0
+0
+0
+1
+app/crates/desktop/src/pipeline.rs:30-40
+Out of scope
+1
+0
+0
+0
+1
+app/crates/desktop/src/pipeline.rs:30-34, 51-56
+In scope but not verifiable (for example other_quantum)
+1
+1
+0
+1
+3
+app/crates/desktop/src/pipeline.rs:83, 90-94, 132
+Verifiable, verified on the first attempt
+1
+1
+1
+1
+4
+app/crates/desktop/src/pipeline.rs:83, 98, 106-108, 132
+Verifiable, wrong first, verified after repair
+1
+2
+2
+1
+6
+app/crates/desktop/src/pipeline.rs:69-117, 132
+Verifiable, still wrong after repair
+1
+2
+2
+1
+6
+app/crates/desktop/src/pipeline.rs:69-117, 132
+The 24 Nov live Bell-state run reported &quot;gemini-3.5-flash-lite (4)&quot;, which matches the verified-on-the-first-attempt path. [context: 24 Nov live run; app/crates/desktop/src/llm/mod.rs:385-391]
+These are logical calls. Each one can take up to 4 HTTP attempts per model, with waits of 10, 30 and 60 s between them. [app/crates/desktop/src/llm/mod.rs:296-297, 314-375]
+After that, Gemini moves to the next model in its chain, which by default is the chosen model followed by gemini-3.1-flash-lite. So one logical call can take up to 8 HTTP attempts by default. The other providers have no model fallback in the app. [app/crates/desktop/src/gemini.rs:26-31, 44-79; app/crates/desktop/src/config.rs:18-19, 154-162; app/crates/desktop/src/llm/mod.rs:401-409]
+Only answered calls count in the &quot;models used&quot; line. Gemini counts a response before checking it for text, so a blocked HTTP 200 still counts. The Anthropic and OpenAI-compatible clients count a call only after the text is accepted. [app/crates/desktop/src/gemini.rs:60-67; app/crates/desktop/src/llm/anthropic.rs:143-147; app/crates/desktop/src/llm/openai.rs:98-103]
+The count is per question, because a new client is built for every ask. [app/crates/desktop/src/main.rs:270-271]
+Saving a key uses no generation, except for Qwen, where the check is one real chat request. [app/crates/desktop/src/gemini.rs:101-110; app/crates/desktop/src/llm/anthropic.rs:167-171; app/crates/desktop/src/llm/openai.rs:115-128]
+4. What each wire protocol sends
+Item
+Gemini (native API)
+Anthropic Messages
+OpenAI-compatible
+Evidence
+Endpoint
+POST {base}/{model}:generateContent
+POST {base}/messages
+POST {base}/chat/completions
+app/crates/desktop/src/gemini.rs:51; app/crates/desktop/src/llm/anthropic.rs:132; app/crates/desktop/src/llm/openai.rs:93
+Key header
+x-goog-api-key
+x-api-key, plus anthropic-version: 2026-10-21
+Authorization: Bearer &lt;key&gt;
+app/crates/desktop/src/gemini.rs:53; app/crates/desktop/src/llm/anthropic.rs:16, 65-71; app/crates/desktop/src/llm/openai.rs:95-96
+System prompt
+systemInstruction.parts[0].text
+top-level system
+first message with role system
+app/crates/desktop/src/gemini.rs:95-97; app/crates/desktop/src/llm/anthropic.rs:86-88; app/crates/desktop/src/llm/openai.rs:26-28
+Temperature and JSON MIME type
+sent from the prompt SETTINGS
+not sent
+not sent
+app/crates/desktop/src/gemini.rs:84-90; app/crates/desktop/src/llm/anthropic.rs:3-10; app/crates/desktop/src/llm/openai.rs:4-6
+Other body fields
+none
+max_tokens 16000; output_config.effort &quot;medium&quot; for listed model prefixes; fallbacks: &quot;default&quot; and header anthropic-beta: server-side-fallback-2026-07-01 for six listed models
+none (only model and messages)
+app/crates/desktop/src/llm/anthropic.rs:17-21, 33-53, 74-90; app/crates/desktop/src/llm/openai.rs:24-31
+Timeout per attempt
+120 s
+600 s
+600 s
+app/crates/desktop/src/gemini.rs:31; app/crates/desktop/src/llm/anthropic.rs:22-23; app/crates/desktop/src/llm/openai.rs:12-13
+Model fallback
+in-app chain; dead models skipped for the rest of the process
+server-side, Anthropic, for the listed models only
+none
+app/crates/desktop/src/gemini.rs:12-15, 26-31, 69-73; app/crates/desktop/src/llm/anthropic.rs:4-10, 33-38; app/crates/desktop/src/llm/mod.rs:401-402
+Model recorded as used
+the requested model
+the response&apos;s model field (can differ after a server-side fallback)
+the response&apos;s model field (OpenRouter reports the model that served it)
+app/crates/desktop/src/gemini.rs:61; app/crates/desktop/src/llm/anthropic.rs:144; app/crates/desktop/src/llm/openai.rs:100-101
+All providers share one HTTP agent: ureq on the OS TLS stack (native-tls) with the platform certificate verifier. HTTP error statuses are returned as values, so the caller can read the error body. [app/crates/desktop/src/llm/mod.rs:259-268; app/crates/desktop/Cargo.toml:22]
+Response bodies up to 32 MiB are read. A body that breaks off mid-read is reported as a network error. [app/crates/desktop/src/llm/mod.rs:270-283]
+The Anthropic client notes that the docs call x-api-key a legacy form, still supported, and that it is the form this app was specified to use. [app/crates/desktop/src/llm/anthropic.rs:63-64]
+Models that get server-side fallbacks: claude-opus-5-5, claude-opus-5, claude-fable-5-2, claude-fable-5-1, claude-mythos-5-2, claude-sonnet-5-5. [app/crates/desktop/src/llm/anthropic.rs:33-38]
+Model-id prefixes that get effort: claude-opus-4-5, claude-opus-4-6, claude-opus-4-7, claude-opus-4-8, claude-opus-5, claude-sonnet-4-6, claude-sonnet-5, claude-haiku-5, claude-fable-, claude-mythos-. [app/crates/desktop/src/llm/anthropic.rs:40-53]
+5. Provider presets
+Eleven presets are compiled into the app. The web view can name a provider only by its id and can never supply a URL. [app/crates/desktop/src/llm/mod.rs:25-26, 47-200, 202-205]
+The code states that every base URL, key page and default model was checked against the provider&apos;s documentation fetched on 2026-11-25. This fact file did not re-check them (no network use). [app/crates/desktop/src/llm/mod.rs:5-6]
+#
+id
+Display name
+Wire protocol
+Default model
+Key env var
+Live model list
+Evidence
+1
+gemini
+Google Gemini
+Gemini native
+gemini-3.5-flash-lite
+GEMINI_API_KEY
+yes
+app/crates/desktop/src/llm/mod.rs:50-59; app/crates/desktop/src/config.rs:18
+2
+anthropic
+Anthropic (Claude)
+Anthropic Messages
+claude-opus-5-5
+ANTHROPIC_API_KEY
+yes
+app/crates/desktop/src/llm/mod.rs:62-71; app/crates/desktop/src/llm/anthropic.rs:18
+3
+openai
+OpenAI
+OpenAI-compatible
+gpt-6.2-astra
+OPENAI_API_KEY
+yes
+app/crates/desktop/src/llm/mod.rs:76-85
+4
+deepseek
+DeepSeek
+OpenAI-compatible
+deepseek-flash
+DEEPSEEK_API_KEY
+yes
+app/crates/desktop/src/llm/mod.rs:89-98
+5
+moonshot
+Moonshot AI (Kimi)
+OpenAI-compatible
+kimi-k3.1-pro
+MOONSHOT_API_KEY
+yes
+app/crates/desktop/src/llm/mod.rs:103-112
+6
+qwen
+Alibaba Qwen (Model Studio, international)
+OpenAI-compatible
+qwen4-max
+DASHSCOPE_API_KEY
+no
+app/crates/desktop/src/llm/mod.rs:120-129
+7
+xai
+xAI (Grok)
+OpenAI-compatible
+grok-4.7
+XAI_API_KEY
+yes
+app/crates/desktop/src/llm/mod.rs:135-144
+8
+mistral
+Mistral AI
+OpenAI-compatible
+mistral-small-latest
+MISTRAL_API_KEY
+yes
+app/crates/desktop/src/llm/mod.rs:150-159
+9
+groq
+Groq
+OpenAI-compatible
+llama-3.3-70b-versatile
+GROQ_API_KEY
+yes
+app/crates/desktop/src/llm/mod.rs:163-172
+10
+together
+Together AI
+OpenAI-compatible
+MiniMaxAI/MiniMax-M3.1-Flash
+TOGETHER_API_KEY
+yes
+app/crates/desktop/src/llm/mod.rs:176-185
+11
+openrouter
+OpenRouter
+OpenAI-compatible
+openai/gpt-5.2
+OPENROUTER_API_KEY
+yes
+app/crates/desktop/src/llm/mod.rs:190-199
+id
+Base URL
+Key page (opened by &quot;Get a key&quot;)
+Evidence
+gemini
+https://generativelanguage.googleapis.com/v1beta/models
+https://aistudio.google.com/apikey
+app/crates/desktop/src/gemini.rs:10; app/crates/desktop/src/llm/mod.rs:54-55
+anthropic
+https://api.anthropic.com/v1
+https://platform.claude.com/settings/keys
+app/crates/desktop/src/llm/mod.rs:66-67
+openai
+https://api.openai.com/v1
+https://platform.openai.com/api-keys
+app/crates/desktop/src/llm/mod.rs:80-81
+deepseek
+https://api.deepseek.com
+https://platform.deepseek.com/api_keys
+app/crates/desktop/src/llm/mod.rs:93-94
+moonshot
+https://api.moonshot.ai/v1
+https://platform.kimi.ai/console/api-keys
+app/crates/desktop/src/llm/mod.rs:107-108
+qwen
+https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+https://modelstudio.console.alibabacloud.com/ap-southeast-1/settings/api-key
+app/crates/desktop/src/llm/mod.rs:124-125
+xai
+https://api.x.ai/v1
+https://console.x.ai/team/default/api-keys
+app/crates/desktop/src/llm/mod.rs:139-140
+mistral
+https://api.mistral.ai/v1
+https://console.mistral.ai/api-keys
+app/crates/desktop/src/llm/mod.rs:154-155
+groq
+https://api.groq.com/openai/v1
+https://console.groq.com/keys
+app/crates/desktop/src/llm/mod.rs:167-168
+together
+https://api.together.ai/v1
+https://api.together.ai/settings/projects/~current/api-keys
+app/crates/desktop/src/llm/mod.rs:180-181
+openrouter
+https://openrouter.ai/api/v1
+https://openrouter.ai/keys
+app/crates/desktop/src/llm/mod.rs:194-195
+A unit test checks that preset ids are unique and that every base URL and key page starts with https://. [app/crates/desktop/src/llm/mod.rs:521-532]
+The model used for a provider is the learner&apos;s saved choice in settings.json. Failing that, Gemini only falls back to GEMINI_MODEL from the environment or .env. Otherwise the preset default is used. [app/crates/desktop/src/config.rs:141-152, 274-281]
+A model id chosen in the UI must be 1-200 characters long, use only letters, digits and ._-/:~@+, and must not contain &quot;..&quot;. [app/crates/desktop/src/config.rs:201-208, 264-272]
+Model lists: Gemini asks for pageSize 1000, follows nextPageToken for up to 10 pages, and keeps only models that support generateContent. Anthropic uses limit 1000 and follows has_more/last_id for up to 10 pages. OpenAI-compatible presets read one GET {base}/models page and accept {&quot;data&quot;:[{&quot;id&quot;:...}]} or a bare array. Qwen returns a message saying it publishes no model list. [app/crates/desktop/src/gemini.rs:112-153; app/crates/desktop/src/llm/anthropic.rs:173-199; app/crates/desktop/src/llm/openai.rs:62-76, 130-149]
+6. How a provider is chosen
+Key-prefix detection (only when the UI names no provider)
+Key prefix (after trimming)
+Result
+Evidence
+sk-ant-
+anthropic
+app/crates/desktop/src/llm/mod.rs:232
+sk-or-
+openrouter
+app/crates/desktop/src/llm/mod.rs:233
+AIza
+gemini
+app/crates/desktop/src/llm/mod.rs:234
+gsk_
+groq
+app/crates/desktop/src/llm/mod.rs:235
+xai-
+xai
+app/crates/desktop/src/llm/mod.rs:236
+any other sk-
+Ambiguous: the learner must choose (OpenAI, DeepSeek, Moonshot and Qwen keys can all start with sk-)
+app/crates/desktop/src/llm/mod.rs:241, 515-517
+anything else
+Unknown: the learner must choose
+app/crates/desktop/src/llm/mod.rs:241, 518
+The specific sk-ant- and sk-or- prefixes are tested before the shared sk-. Detection only routes a key and never rejects one. [app/crates/desktop/src/llm/mod.rs:221-228, 238-241]
+A provider chosen in the UI always wins over the prefix, even when the prefix clearly names another provider. A unit test asserts this: a key with the Gemini prefix sent with provider &quot;openai&quot; resolves to openai. [app/crates/desktop/src/main.rs:118-122, 416-421; app/crates/desktop/src/llm/mod.rs:227-228]
+An unknown explicit id gives &quot;Unknown provider. Choose one from the list.&quot; Ambiguous and unknown keys ask the learner to choose the provider and save again, with needs_provider: true. [app/crates/desktop/src/main.rs:119-132]
+In the key form the provider list defaults to &quot;Detect from the key&quot;. The chosen provider is not reset after a save; only the key field is cleared. [app/crates/ui/src/main.rs:184-200, 303-307]
+Active provider
+The active provider is the saved one in settings.json, if it names a known preset. Otherwise it is Gemini if Gemini has a key. Failing that, it is the first preset in table order that has a key, and if none has a key it is Gemini. [app/crates/desktop/src/config.rs:164-175]
+Saving a key makes its provider active. set_provider switches the provider and can store a model for it. [app/crates/desktop/src/main.rs:178-181, 215-231; app/crates/desktop/src/config.rs:229-238]
+The UI shows a provider switch only when more than one provider has a key. [app/crates/ui/src/main.rs:260-265]
+7. Key validation before saving
+Order of steps, all on a worker thread: [app/crates/desktop/src/main.rs:161-191]
+(1) the host trims the key; (2) resolves the provider; (3) checks the format: 20-400 characters, no whitespace or control characters; (4) checks the key live with the provider; (5) stores it in Credential Manager, trimming and checking the format again; (6) makes the provider active; (7) sends status with key_saved: true. [app/crates/desktop/src/main.rs:164, 171-186; app/crates/desktop/src/config.rs:191-199, 210-217, 230-238]
+On failure the host sends key_error with a message scrubbed of the key, plus the provider id. needs_provider is true only for provider-resolution errors. [app/crates/desktop/src/main.rs:173-176, 188; app/crates/ui/src/state.rs:150-156]
+Protocol
+Check request
+Timeout
+Counted as valid
+Counted as rejected
+Other outcomes
+Evidence
+Gemini
+GET {base}?pageSize=1 with x-goog-api-key
+20 s
+200, 429
+400, 401, 403: &quot;Google rejected this key: &lt;API message&gt;&quot;
+no HTTP answer: &quot;Could not reach Google to check the key (...)&quot;; other status: &quot;Could not check the key (HTTP n: ...)&quot;
+app/crates/desktop/src/gemini.rs:101-110
+Anthropic
+GET {base}/models?limit=1 with x-api-key and anthropic-version
+20 s
+200, 429
+401, 403: &quot;That key was rejected by Anthropic (n).&quot;
+no HTTP answer: could not reach; any other status, including 400: &quot;Could not check the key with Anthropic (HTTP n: ...)&quot;
+app/crates/desktop/src/llm/anthropic.rs:155-171; app/crates/desktop/src/llm/mod.rs:463-473
+OpenAI-compatible (8 presets: all except Qwen)
+GET {base}/models with Bearer
+30 s
+200, 429
+401, 403
+same shared wording as Anthropic
+app/crates/desktop/src/llm/openai.rs:111-128; app/crates/desktop/src/llm/mod.rs:463-473
+Qwen
+POST {base}/chat/completions, model qwen4-max, user text &quot;Reply with OK.&quot;
+120 s
+200, 429
+401, 403
+same shared wording; this is a real generation request
+app/crates/desktop/src/llm/openai.rs:115-127
+A 429 during the check counts as a valid key that is rate-limited, so the key is saved. [app/crates/desktop/src/gemini.rs:106; app/crates/desktop/src/llm/mod.rs:468]
+On 24 Nov a fake key was rejected with &quot;Google rejected this key: API key not valid&quot;, which matches the Gemini wording above. [context: 24 Nov live run; app/crates/desktop/src/gemini.rs:105]
+8. Where keys are stored and the order they are read
+Order
+Source
+Detail
+key_source label
+Evidence
+1
+Windows Credential Manager
+service &quot;QuantumExplainer&quot;, account &quot;&lt;provider id&gt;_api_key&quot; (for example gemini_api_key, anthropic_api_key), through the keyring crate 4.2.0
+Windows Credential Manager
+app/crates/desktop/src/config.rs:4-5, 17, 99-106, 128-131; app/Cargo.lock:1861-1862
+2
+Process environment variable
+the preset&apos;s variable, for example ANTHROPIC_API_KEY; blank values are ignored
+environment variable
+app/crates/desktop/src/config.rs:132-133
+3
+.env file
+the first .env found walking up from the exe folder, then up from the current directory; lines starting with # skipped; KEY=VALUE split at the first =; surrounding quotes trimmed
+.env file
+app/crates/desktop/src/config.rs:68-97, 120-125, 134-135
+4
+none
+no key for this provider
+not set
+app/crates/desktop/src/config.rs:136-137
+The first .env file found is used even if it lacks this provider&apos;s key; .env files further up are then not read. [app/crates/desktop/src/config.rs:78-84]
+The Gemini account name stays gemini_api_key so keys saved by earlier versions still work. [app/crates/desktop/src/config.rs:4-5, 244-248]
+settings.json is at %LOCALAPPDATA%\QuantumExplainer\settings.json. It holds only the active provider and the model per provider. It is written to a temporary file and then renamed. Unknown fields such as api_key are dropped when it is loaded and saved again (unit test). [app/crates/desktop/src/config.rs:9-10, 21-29, 40-66, 250-262]
+The module doc says keys never reach the web view and are never written to a file by the app. In the files read for this fact file, the only place a key is written is the Credential Manager set_password call. [app/crates/desktop/src/config.rs:2, 210-217]
+clear_key deletes only the Credential Manager entry, and a missing entry counts as success. A key from an environment variable or .env for the same provider stays in effect. The UI shows &quot;Remove&quot; only when the key source is Credential Manager. [app/crates/desktop/src/config.rs:219-227; app/crates/ui/src/main.rs:333-335]
+The Python prototype read only GEMINI_API_KEY from the environment. It also loaded the repo-root .env without overriding variables that were already set. [code/workflow.py:20-29, 43-52]
+9. What the web view may know about a key
+The status event gives, for each provider: id, label, has_key, key_hint, key_source, model, key_page and lists_models. For the active provider it adds has_key, key_hint, key_source, model, provider, provider_label and the app version. [app/crates/desktop/src/main.rs:83-116]
+key_hint is the last four characters of the key. The code comment says this is the only part of a key that ever reaches the web view. [app/crates/desktop/src/llm/mod.rs:244-248]
+The key goes from the UI to the host once, in save_key. The input is type=password with autocomplete and spellcheck off, and it is cleared after sending. [app/crates/ui/src/main.rs:187-201, 308-317]
+Error and notice texts are scrubbed: every copy of the full key is replaced by &quot;…&quot; and the last four characters when the key is at least 8 characters long. This covers pipeline errors and notices, key-check errors, model-list errors and save_key errors. [app/crates/desktop/src/llm/mod.rs:250-257, 411-426, 438-456; app/crates/desktop/src/main.rs:188]
+Scrubbing runs after api_message has cut the provider&apos;s message to 140 characters. A key echoed across that cut would no longer match in full (see section 13, claim 2). [app/crates/desktop/src/llm/mod.rs:285-294, 340-341]
+IPC messages are handled only when they come from app.localhost or the app scheme. The page cannot navigate away from the app, open new windows or turn dropped files into navigations. [app/crates/desktop/src/main.rs:366-369, 383-388]
+Events from host to page are passed to evaluate_script as a JSON string literal, not spliced into code. [app/crates/desktop/src/main.rs:394-397]
+Key pages open in the default browser, and only from the preset table. An unknown or missing provider opens the Gemini page. [app/crates/desktop/src/main.rs:71-81, 192-196]
+10. Retry, backoff and fallback
+Condition
+Class
+What happens
+Evidence
+HTTP 200 with a JSON body
+answer
+returns the body and the attempt time (seconds, 2 decimals)
+app/crates/desktop/src/llm/mod.rs:326-328
+HTTP 200 with a body that is not JSON
+transient
+notice &quot;&lt;model&gt;: incomplete answer; retrying in Ns&quot;; exhausted after the 4th attempt
+app/crates/desktop/src/llm/mod.rs:329-337
+Gemini only: 429 whose text has &quot;perday&quot; or &quot;per day&quot;; HTTP 404; or NOT_FOUND in the body
+model unavailable
+notice &quot;&lt;model&gt; unavailable (...); switching model&quot;; the model is skipped for the rest of the process
+app/crates/desktop/src/gemini.rs:54-58, 69-73; app/crates/desktop/src/llm/mod.rs:342-345
+No HTTP answer, and the error text has timed out, timeout, disconnected, reset, closed or broken pipe
+transient
+wait and retry
+app/crates/desktop/src/llm/mod.rs:347-350
+No HTTP answer for any other reason (DNS, TLS, no route)
+fatal
+&quot;Could not reach &lt;provider&gt; (...). Check the internet connection.&quot;
+app/crates/desktop/src/llm/mod.rs:351-353
+HTTP 429, 500, 502, 503, 504 or 529; or body has RESOURCE_EXHAUSTED, UNAVAILABLE or overloaded_error
+transient
+notice &quot;&lt;model&gt; busy (...); retrying in Ns&quot;; waits 10, 30, 60 s
+app/crates/desktop/src/llm/mod.rs:354-367
+Any other status, for example 400, 401 or 403 (and 404 outside Gemini)
+fatal
+&quot;&lt;provider&gt; rejected the request (HTTP n: ...)&quot;
+app/crates/desktop/src/llm/mod.rs:360-362
+Still transient on the 4th attempt
+exhausted
+Gemini: next model in the chain; others: &quot;&lt;provider&gt; kept failing (...). Please try again later.&quot;
+app/crates/desktop/src/llm/mod.rs:368-371; app/crates/desktop/src/gemini.rs:74; app/crates/desktop/src/llm/anthropic.rs:150; app/crates/desktop/src/llm/openai.rs:106
+Every Gemini model failed or was skipped
+error
+&quot;All models failed (&lt;chain&gt;). Last error: ...&quot;
+app/crates/desktop/src/gemini.rs:78
+For Anthropic and OpenAI-compatible providers the &quot;model unavailable&quot; test always returns false, so they never switch models in the app. [app/crates/desktop/src/llm/anthropic.rs:142; app/crates/desktop/src/llm/openai.rs:97]
+Notices reach the UI as notice events. They appear in the stage list and, while the run waits, in the verdict area. [app/crates/desktop/src/pipeline.rs:26, 146-148; app/crates/ui/src/tutor.rs:167, 253-259]
+On 24 Nov Gemini sometimes returned HTTP 503 &quot;high demand&quot;, and the app retried and showed a notice. [context: 24 Nov live run]
+Dead Gemini models are kept in a process-wide set, so they stay skipped for later questions in the same session. [app/crates/desktop/src/gemini.rs:12-15, 29-31, 69-72]
+A fatal error during a question ends the whole run with an error event. [app/crates/desktop/src/pipeline.rs:140-143]
+Error texts are reduced to one line of at most 140 characters, taken from error.message when the body is JSON. [app/crates/desktop/src/llm/mod.rs:285-294]
+11. Refusals, safety blocks and empty answers
+Protocol
+Condition
+Result
+Evidence
+Gemini
+finishReason is not STOP, MAX_TOKENS or FINISH_REASON_UNSPECIFIED (for example a safety stop)
+error &quot;Gemini returned no answer (blocked: &lt;reason&gt;)&quot;
+app/crates/desktop/src/gemini.rs:62-67, 188-209
+Gemini
+no candidates[0].content.parts (for example a blocked prompt)
+error; reason from promptFeedback.blockReason, else &quot;empty response&quot;
+app/crates/desktop/src/gemini.rs:195, 204-209
+Gemini
+parts present but no text, or only &quot;thought&quot; parts
+empty string returned; the next step sees invalid JSON (for P1, the router message)
+app/crates/desktop/src/gemini.rs:195-201; app/crates/desktop/src/pipeline.rs:35-40
+Gemini
+finishReason MAX_TOKENS
+text accepted as is, even if cut off
+app/crates/desktop/src/gemini.rs:191-193
+Anthropic
+stop_reason &quot;refusal&quot;
+error &quot;Claude declined to answer this request (category: X). Try rephrasing the question.&quot;; content is not read
+app/crates/desktop/src/llm/anthropic.rs:94-101, 267-277
+Anthropic
+no content array, or no non-blank text blocks
+error &quot;Anthropic returned no answer ...&quot;
+app/crates/desktop/src/llm/anthropic.rs:102-112, 279-283
+Anthropic
+thinking and fallback blocks
+skipped; only text blocks are joined
+app/crates/desktop/src/llm/anthropic.rs:92-109, 252-265
+OpenAI-compatible
+no choices[0]
+&quot;&lt;provider&gt; returned no answer (empty response).&quot;
+app/crates/desktop/src/llm/openai.rs:36-38
+OpenAI-compatible
+message.refusal is not empty
+&quot;&lt;provider&gt; declined to answer: &lt;first 200 characters of the refusal&gt;&quot;
+app/crates/desktop/src/llm/openai.rs:39-42
+OpenAI-compatible
+finish_reason content_filter
+&quot;&lt;provider&gt; blocked the answer (content filter). Try rephrasing the question.&quot;
+app/crates/desktop/src/llm/openai.rs:43-46
+OpenAI-compatible
+content empty (string or array of text parts)
+&quot;&lt;provider&gt; returned no answer text (finish reason: ...)&quot;
+app/crates/desktop/src/llm/openai.rs:47-58
+All
+any error above
+the run ends with an error event
+app/crates/desktop/src/pipeline.rs:140-143
+The Python prototype returned resp.text or &quot;&quot; and carried on with an empty answer. [code/workflow.py:98]
+12. IPC commands related to AI and keys
+cmd
+Sent by the UI from
+Payload
+Host action
+Reply event(s)
+Evidence
+hello
+app start
+none
+builds the status
+status
+app/crates/desktop/src/main.rs:150; app/crates/ui/src/main.rs:36
+save_key
+key form (Settings sheet and Tutor first screen)
+key, optional provider
+worker thread: resolve provider, format check, live check, store, make active
+status with key_saved: true; or key_error {message, needs_provider}; or key_error {message, provider}
+app/crates/desktop/src/main.rs:161-191; app/crates/ui/src/main.rs:177-201
+open_key_page
+&quot;Get a key&quot;
+provider (form choice, else active)
+opens the preset&apos;s key page in the default browser; Gemini&apos;s page if unknown
+none
+app/crates/desktop/src/main.rs:192-196; app/crates/ui/src/main.rs:325-330
+clear_key
+&quot;Remove&quot;
+provider (the active one)
+deletes the Credential Manager entry for the named provider, or the active one if none is named; an unknown id removes nothing
+status, with settings_error on failure or unknown id
+app/crates/desktop/src/main.rs:137-142, 197-214; app/crates/ui/src/main.rs:334
+set_provider
+provider switch; model list
+provider, optional model
+stores the active provider and, if given, a validated model id
+status, with settings_error on failure or unknown id
+app/crates/desktop/src/main.rs:215-232; app/crates/ui/src/main.rs:225, 281
+list_models
+&quot;Choose another&quot;
+provider
+worker thread: read the provider&apos;s key, call its model list
+models {provider, models} or models_error {provider, message}
+app/crates/desktop/src/main.rs:233-251; app/crates/ui/src/main.rs:289
+ask
+Tutor submit
+id, question, level
+resolve settings; no key gives an error event; an empty question gives no reply; otherwise a worker thread runs the pipeline
+stage, route, explanation, verification, repair, practice, notice, done, error
+app/crates/desktop/src/main.rs:252-276; app/crates/ui/src/state.rs:219-223
+The win command (min, max, drag, close) controls only the window. [app/crates/desktop/src/main.rs:151-160]
+IPC bodies that are not JSON, and unknown cmd values, are ignored without a reply. [app/crates/desktop/src/main.rs:145, 277]
+The host sets settings_error, but nothing in app/crates/ui/src reads it. Errors from clear_key and set_provider are therefore not shown to the learner. [app/crates/desktop/src/main.rs:205, 210, 223, 228; search of app/crates/ui/src for settings_error: no match]
+The UI ignores run events whose id is not the current run&apos;s id. [app/crates/ui/src/state.rs:158-162]
+The UI enables asking only when a key exists, the question is not empty and no run is active. [app/crates/ui/src/tutor.rs:36-43]
+Events from the host during a question
+type
+Fields besides type and id
+Evidence
+stage
+stage (route, explain, verify, practice); state (active, done, skipped, error); attempt for explain and verify
+app/crates/desktop/src/pipeline.rs:29, 38, 50, 53, 70, 88, 92, 95, 105, 120, 135
+route
+data, params, verifiable, seconds, clean
+app/crates/desktop/src/pipeline.rs:46-49
+explanation
+attempt, data, clean, seconds
+app/crates/desktop/src/pipeline.rs:87
+verification
+attempt; data {ok, truth, claimed, mismatches} or {ok: null, note}; trace_algo and params when checked
+app/crates/desktop/src/pipeline.rs:91, 104; app/crates/qcore/src/lib.rs:462-468
+repair
+mismatches
+app/crates/desktop/src/pipeline.rs:115
+practice
+data
+app/crates/desktop/src/pipeline.rs:134
+notice
+message
+app/crates/desktop/src/pipeline.rs:146-148
+done
+final, models, seconds
+app/crates/desktop/src/pipeline.rs:141
+error
+message, models
+app/crates/desktop/src/pipeline.rs:142
+13. Parity with the Python prototype
+Aspect
+Python prototype
+Native app
+Status
+Evidence
+Prompt text
+reads prompts/final/*.txt at run time
+embeds the same four files at compile time
+same source files
+code/workflow.py:138-139; app/crates/desktop/src/prompts.rs:24-31
+Prompt file parsing
+regex on the ### SETTINGS / SYSTEM / USER headers
+line match on the same headers
+same rules; unit test on the parsed settings
+code/workflow.py:55-67; app/crates/desktop/src/prompts.rs:34-81, 208-219
+Filling templates
+json.dumps for non-strings; one str.replace per variable, in order
+json.dumps-compatible output (&quot;, &quot; and &quot;: &quot; separators, ASCII escapes) with key order preserved; one single pass
+identical unless an inserted value itself contains a {placeholder}: Python substitutes it again, Rust does not (intentional)
+code/workflow.py:70-76; app/crates/desktop/src/prompts.rs:83-165, 221-237; app/Cargo.toml:15
+JSON recovery
+json.loads, else first { to last }
+same
+same
+code/workflow.py:125-135; app/crates/desktop/src/prompts.rs:167-181
+Control flow
+P1, P2, P3 and check, one repair, P4; a repair flag can turn repair off
+same flow; always up to two explainer attempts
+same flow; no off switch
+code/workflow.py:142-192; app/crates/desktop/src/pipeline.rs:12-144
+Out-of-scope message
+fixed text
+same text
+identical
+code/workflow.py:153-154; app/crates/desktop/src/pipeline.rs:9-10
+Router output not valid JSON
+&quot;Router output was not valid JSON.&quot;
+&quot;The router&apos;s answer was not valid JSON. Please try again.&quot;; non-object JSON is also treated as invalid
+wording differs
+code/workflow.py:149-151; app/crates/desktop/src/pipeline.rs:36-40
+Parameter defaults
+norm_params
+port of norm_params
+unit test named after the prototype
+code/quantum_sim.py:153-167; app/crates/qcore/src/lib.rs:407-438, 643-653
+Simulator check
+verify_claim, tol 0.02, truth rounded to 6 decimals
+verify, tol 0.02, truth rounded to 6 decimals
+same rules; unit tests named after the prototype
+code/quantum_sim.py:30-33, 86-129; app/crates/qcore/src/lib.rs:122-141, 518-557, 568-641
+Repair feedback text
+template with a Python dict repr of the truth
+same template; py_repr for the truth; unparsable values and bad keys written as Python repr
+identical in the tested cases; mismatch order can differ (Python iterates a set, Rust a sorted set)
+code/workflow.py:184-185; app/crates/desktop/src/pipeline.rs:109-113; app/crates/qcore/src/lib.rs:474-516, 531, 551; code/quantum_sim.py:110, 125
+Gemini settings
+temperature, response_mime_type, system_instruction through the google-genai SDK
+the same three through REST generateContent
+same parameters
+code/workflow.py:79-87; app/crates/desktop/src/gemini.rs:82-99
+Default model chain
+GEMINI_MODEL or gemini-3.5-flash-lite, then GEMINI_FALLBACKS or gemini-3.1-flash-lite
+same defaults; a saved model choice comes first
+same defaults
+code/workflow.py:30-35; app/crates/desktop/src/config.rs:18-19, 141-162
+Retry waits
+10, 30, 60 s, then the next model
+same
+same
+code/workflow.py:93; app/crates/desktop/src/llm/mod.rs:297
+Transient errors
+substring match on the exception text: 429, RESOURCE_EXHAUSTED, 503, 500, UNAVAILABLE, disconnected, timed out, Timeout
+status 429/500/502/503/504/529; RESOURCE_EXHAUSTED, UNAVAILABLE, overloaded_error; timeout, disconnect, reset, closed, broken pipe; DNS and TLS failures fail fast
+widened (intentional)
+code/workflow.py:100-116; app/crates/desktop/src/llm/mod.rs:340-372
+Blocked or empty Gemini answer
+returns &quot;&quot; and continues
+stops with an error
+intentional difference
+code/workflow.py:98; app/crates/desktop/src/gemini.rs:62-67
+Models-used line
+counts for the whole process
+counts per question
+differs
+code/workflow.py:37, 97, 120-122; app/crates/desktop/src/main.rs:270-271
+Providers
+Gemini only
+11 presets; non-Gemini providers get no temperature or MIME setting
+new
+code/workflow.py:43-52; app/crates/desktop/src/llm/mod.rs:47-200; app/crates/desktop/src/llm/anthropic.rs:3-10; app/crates/desktop/src/llm/openai.rs:4-6
+Key source
+GEMINI_API_KEY (repo-root .env)
+Credential Manager, then env var, then .env
+new
+code/workflow.py:20-29, 48-51; app/crates/desktop/src/config.rs:128-139
+injection_attempt
+not acted on
+not acted on (UI tag only)
+same
+code/workflow.py:146-165; app/crates/desktop/src/pipeline.rs:41-62; app/crates/ui/src/tutor.rs:234-235
+Level
+any string
+beginner or intermediate only
+narrowed
+code/workflow.py:142; app/crates/desktop/src/main.rs:255-258
+prompts.rs states that the prompt text sent is byte-for-byte what the Python prototype sends, so the Milestone 2 results still describe the app. No test in today&apos;s test list compares a filled prompt with the Python output. The claim rests on unit tests of the parts (parsing, filling, JSON output), not on an end-to-end comparison. [app/crates/desktop/src/prompts.rs:4-5; docs/native-app/build/test_names.txt:1-41]
+Milestone 2 results come from the Python prototype. Gemini 3.5 Flash-Lite, run run_20261122_1710: automatic checks 12/13 (test 9 misrouted); LLM-assisted rubric 4 Pass / 5 Partial / 4 Fail. Claude cross-check: 13/13 automatic, rubric 7/6/0. Explainer versions over 12 runs each: verified 5/12, 12/12, 12/12; clean JSON 0/12, 0/12, 12/12. [context: Milestone 2 results reported by the lead]
+Non-Gemini providers in the native app run without the prompts&apos; temperature and JSON mode, so those results cannot be assumed to carry over to them. No evaluation of the native app with any provider has been recorded. [app/crates/desktop/src/llm/anthropic.rs:3-10; app/crates/desktop/src/llm/openai.rs:4-6]
+The one low-severity item left unfixed by the 24 Nov review (repair feedback text differed from Python for unparsable values and bad keys) now looks fixed for the tested cases. Python-style repr helpers exist, and a unit test asserts the Python strings. Mismatch ordering is the remaining difference. [app/crates/qcore/src/lib.rs:480-516, 527, 541-543, 619-633; code/quantum_sim.py:107, 121; context: 24 Nov review]
+14. Earlier claims checked against today&apos;s code
+Claims 1-12 come from prior-findings.json (an earlier security exercise, saved in another session&apos;s scratchpad). Each was checked by reading today&apos;s code. None was executed for this file.
+Claim (earlier severity)
+What today&apos;s code shows
+Status
+Evidence
+1. Gemini and Anthropic keys are forwarded on cross-host redirects (high)
+agent() sets no redirect options. ureq 3.5.2 defaults are https_only false, max_redirects 10, redirect_auth_headers Never. ureq-proto 0.7.1 removes only Authorization, Cookie and Content-Length when it follows a redirect. The Gemini and Anthropic keys travel in custom headers.
+still present (static reading; never triggered here). Bearer providers are not affected.
+app/crates/desktop/src/llm/mod.rs:261-268; app/crates/desktop/src/gemini.rs:53, 103, 119; app/crates/desktop/src/llm/anthropic.rs:65-67; ureq-3.5.2/src/config.rs:1069-1077 and ureq-proto-0.7.1/src/client/redirect.rs:84-90 in the local Cargo registry
+2. The key scrubber runs after the 140-character cut (medium)
+unchanged: api_message cuts first, scrub runs later with an exact match
+still present
+app/crates/desktop/src/llm/mod.rs:250-257, 287-294, 340-341, 419, 425
+3. An explicit provider overrides an unambiguous key prefix (medium)
+unchanged; the code comment and a unit test describe it as intended
+still present (design choice)
+app/crates/desktop/src/main.rs:119-121, 420; app/crates/desktop/src/llm/mod.rs:227-228
+4. .env is read from the current directory and every parent (medium)
+unchanged. GEMINI_MODEL and GEMINI_FALLBACKS are not passed through check_model_id, which only set_active calls; the model id goes into the Gemini URL path.
+still present
+app/crates/desktop/src/config.rs:68-86, 147, 156, 233-234; app/crates/desktop/src/gemini.rs:51
+5. Concurrent settings writes can undo a provider choice (low)
+no lock; one fixed .json.tmp name; save_key sets the provider active from a worker thread
+still present
+app/crates/desktop/src/config.rs:57-66, 230-238; app/crates/desktop/src/main.rs:167-181, 215-221
+6. No limit on question length (low)
+the host only trims; the textarea has no maxlength
+still present
+app/crates/desktop/src/main.rs:254; app/crates/ui/src/tutor.rs:59-71
+7. injection_attempt is only displayed (low)
+unchanged; the Python prototype also ignores it
+still present (parity)
+app/crates/desktop/src/pipeline.rs:41-62; app/crates/ui/src/tutor.rs:234-235; code/workflow.py:146-165
+8. NaN probabilities pass the check (high, qcore)
+to_prob has no finiteness check, and the comparison uses &gt;. Python uses float() and the same comparison.
+mechanism still present; parity with Python; not executed
+app/crates/qcore/src/lib.rs:440-458, 553; code/quantum_sim.py:127, 137-150
+9. Deutsch-Jozsa accepts negative and &gt;1 values on non-zero keys (high, qcore)
+the DJ branch checks only the all-zeros key, key length and the sum
+still present; same logic in Python
+app/crates/qcore/src/lib.rs:535-550; code/quantum_sim.py:113-124
+10. Bell and Grover have no total check (medium, qcore)
+per-key tolerance only
+still present; same in Python
+app/crates/qcore/src/lib.rs:551-556; code/quantum_sim.py:125-128
+11. After a reload, old-run events can mix into a new run (medium, UI)
+the run id is the previous id + 1 and restarts after a reload; host threads keep sending with their own id
+still present
+app/crates/ui/src/state.rs:158-162, 219-223; app/crates/desktop/src/main.rs:268-275
+12. Step selection is not reset after a repair (low, UI)
+outside this area
+not checked
+-
+15. Tests that cover this area
+cargo test -p qcore -p desktop: 36 passed, 0 failed, 2 ignored. The 2 ignored are live network tests. [lead-measured]
+Desktop crate: 24 passed, 2 ignored. qcore crate: 12 passed. [docs/native-app/build/test_names.txt:27, 40]
+Module
+Tests
+Evidence
+prompts
+embedded_prompts_parse; fill_is_single_pass_and_keeps_json_braces; py_dumps_matches_python; parse_json_recovers_wrapped_objects
+docs/native-app/build/test_names.txt:22-26; app/crates/desktop/src/prompts.rs:208-244
+llm
+prefixes_route_only_when_unambiguous; every_detected_provider_exists_and_ids_are_unique; keys_never_leak_into_messages; key_check_wording
+docs/native-app/build/test_names.txt:12, 19-21; app/crates/desktop/src/llm/mod.rs:508-549
+llm::anthropic
+headers_carry_version_and_beta; empty_answer_is_an_error; refusal_is_an_error_and_content_is_not_read; body_has_no_sampling_or_thinking_and_enables_fallbacks; fallbacks_and_effort_only_where_documented; parse_joins_text_blocks_and_skips_others
+docs/native-app/build/test_names.txt:5, 7, 10, 13, 15, 18; app/crates/desktop/src/llm/anthropic.rs:209-283
+llm::openai
+parse_reads_first_choice; model_ids_from_both_list_shapes; body_is_system_then_user_with_nothing_else; parse_errors_on_refusal_filter_and_empty
+docs/native-app/build/test_names.txt:9, 11, 14, 17; app/crates/desktop/src/llm/openai.rs:155-192
+gemini
+model_list_keeps_generators_and_strips_prefix; live_router_call (ignored)
+docs/native-app/build/test_names.txt:1, 8; app/crates/desktop/src/gemini.rs:159-185
+config
+accounts_keep_the_old_gemini_name; stored_model_wins_over_default; model_ids_are_plain; stored_settings_hold_no_key
+docs/native-app/build/test_names.txt:3, 4, 6, 16; app/crates/desktop/src/config.rs:244-281
+main
+save_key_provider_resolution
+docs/native-app/build/test_names.txt:23; app/crates/desktop/src/main.rs:416-428
+llm::live
+live_active_provider_router_call (ignored)
+docs/native-app/build/test_names.txt:2; app/crates/desktop/src/llm/mod.rs:486-502
+qcore
+verifier_matches_python_prototype; norm_params_matches_python_prototype; ground_truth_matches_python_prototype
+docs/native-app/build/test_names.txt:29, 36, 38; app/crates/qcore/src/lib.rs:568-653
+No test calls pipeline::run, send_with_retries, the key-storage functions or the IPC handlers, except the provider-resolution helper. [docs/native-app/build/test_names.txt:1-41]
+16. Documentation drift
+The app README lists the key sources as &quot;an environment variable, Windows Credential Manager (set in the app) or a .env file&quot; and names only Gemini. The code reads Credential Manager first and has eleven presets. [app/README.md:16, 42; app/crates/desktop/src/config.rs:128-139; app/crates/desktop/src/llm/mod.rs:47-200]
+The config module doc mentions only &quot;a .env file in the executable&apos;s folder or any parent&quot;. The code also walks up from the current directory. [app/crates/desktop/src/config.rs:6-7, 68-86]
+Unknown / not measured
+Live behaviour of any provider other than Gemini: the files read for this fact file record no call to Anthropic, OpenAI, DeepSeek, Moonshot, Qwen, xAI, Mistral, Groq, Together or OpenRouter.
+Whether today&apos;s release build (6.8 MB) behaves like the 24 Nov dev build in a live question: not run. The two live tests are ignored by default.
+Whether the preset base URLs, key pages, default model ids, the Anthropic API version 2026-10-21 and the beta name are accepted by the providers today: the code says they were checked against docs on 2026-11-25; not re-checked here.
+Whether the Anthropic effort and server-side fallbacks fields are accepted by the listed models: not measured.
+Byte-for-byte identity of filled prompts between the Python prototype and the native app: no end-to-end comparison exists.
+Explanation quality, verification rate and JSON cleanliness of the native app with any provider: not measured (Milestone 2 numbers are from the Python prototype).
+Latency, token use and cost per question per provider: not measured. The only timing is the 24 Nov run (16.6 s, 4 Gemini calls).
+Cost of the Qwen key check (a real generation): not measured.
+Whether redirect forwarding of the Gemini or Anthropic key happens with the real endpoints: not tested. Only the library defaults were read.
+The NaN, Deutsch-Jozsa and total-check verifier claims were not executed today; only the code paths were read.
+How the Python google-genai SDK&apos;s resp.text treats thought parts and safety blocks: not checked.
+Whether Python and Rust print unusual float values (for example exponent notation) the same way in mismatch text: not compared.
+The exact Credential Manager target name the keyring 4.2.0 crate writes on Windows: not read.
+Prior UI claim 12 (step selection after repair): outside this area, not checked.

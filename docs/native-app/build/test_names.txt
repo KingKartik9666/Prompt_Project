@@ -1,0 +1,41 @@
+﻿gemini::live::live_router_call ... ignored
+llm::live::live_active_provider_router_call ... ignored
+config::tests::accounts_keep_the_old_gemini_name ... ok
+config::tests::stored_model_wins_over_default ... ok
+llm::anthropic::tests::headers_carry_version_and_beta ... ok
+config::tests::model_ids_are_plain ... ok
+llm::anthropic::tests::empty_answer_is_an_error ... ok
+gemini::tests::model_list_keeps_generators_and_strips_prefix ... ok
+llm::openai::tests::parse_reads_first_choice ... ok
+llm::anthropic::tests::refusal_is_an_error_and_content_is_not_read ... ok
+llm::openai::tests::model_ids_from_both_list_shapes ... ok
+llm::tests::every_detected_provider_exists_and_ids_are_unique ... ok
+llm::anthropic::tests::body_has_no_sampling_or_thinking_and_enables_fallbacks ... ok
+llm::openai::tests::body_is_system_then_user_with_nothing_else ... ok
+llm::anthropic::tests::fallbacks_and_effort_only_where_documented ... ok
+config::tests::stored_settings_hold_no_key ... ok
+llm::openai::tests::parse_errors_on_refusal_filter_and_empty ... ok
+llm::anthropic::tests::parse_joins_text_blocks_and_skips_others ... ok
+llm::tests::key_check_wording ... ok
+llm::tests::keys_never_leak_into_messages ... ok
+llm::tests::prefixes_route_only_when_unambiguous ... ok
+prompts::tests::fill_is_single_pass_and_keeps_json_braces ... ok
+tests::save_key_provider_resolution ... ok
+prompts::tests::parse_json_recovers_wrapped_objects ... ok
+prompts::tests::py_dumps_matches_python ... ok
+prompts::tests::embedded_prompts_parse ... ok
+result: ok. 24 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+circuit::tests::angles_parse ... ok
+tests::norm_params_matches_python_prototype ... ok
+circuit::tests::controls_swap_and_toffoli ... ok
+circuit::tests::phases_and_identities ... ok
+circuit::tests::bell_matches_real_simulator ... ok
+tests::kets_read_naturally ... ok
+tests::traces_are_normalised_and_consistent ... ok
+circuit::tests::teleportation_by_deferred_measurement ... ok
+tests::ground_truth_matches_python_prototype ... ok
+topic::tests::gate_catches_a_wrong_claim_and_a_dead_link ... ok
+tests::verifier_matches_python_prototype ... ok
+topic::tests::atlas_content_passes_the_gate ... ok
+result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

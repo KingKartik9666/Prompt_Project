@@ -1,0 +1,468 @@
+Fact file: security, privacy, testing and quality evidence
+Quantum Explainer native Windows app (k:\Prompt\app), compiled 25 November 2026 from a read-only review of the code as it is today.
+1. Scope and how to read this file
+Every factual item ends with its evidence in square brackets: a repo-relative path and line (e.g. app/crates/desktop/src/main.rs:63), [lead-measured], [context: ...], or the command that was run. Nothing was built or run for this file, no network API was called, and no key or .env content was read.
+Status today: FIXED means today&apos;s code removes the problem (the fixing code is cited). NOT FIXED means the cited code still behaves as claimed. &quot;NOT FIXED (code unchanged)&quot; is used where the skeptics refuted the harm or never verified the claim: the code is as it was when the claim was made. CANNOT TELL is used where the code alone cannot settle it.
+Every source file under app/crates was last modified no later than 04:36 on 25 Nov, before the round-2 attack began (from 04:59), so the code the attackers read is the code reviewed here. [ls --time-style=full-iso app/crates/*/src, 25 Nov]
+The app source is staged in git but not committed; the last commit is f70aeff (22 Nov 2026). [git log -1; git status, 25 Nov]
+The UI bundle in app/crates/ui/dist was rebuilt at 18:36 on 25 Nov, and its ui_bg.wasm has the same SHA-256 as the copy the 25 Nov headless run tested. [ls; sha256sum, 25 Nov]
+2. Where the prior findings came from
+The attack reports hold 37 raw findings. After merging duplicates (the NaN verifier was reported three times, the provider override twice, the reload issue twice and the step reset twice), 32 distinct findings remain. Table 1 adds the one 24 Nov item the lead asked to re-check, for 33 rows in total. [computed from the files below]
+Source
+Date
+What it contains
+Findings
+prior-findings.json (attack round 1, session 70fefa5e)
+25 Nov, 04:54
+Full text, repro and proposed fix for the llm-output (7) and secrets (5) lenses.
+12
+Attack round 2, workflow wf_170d585b (session 40c62f4c): attack agents&apos; structured outputs in the session transcripts
+25 Nov, from 04:59
+simulator-physics (9), host-ipc (4), ui-logic (12). The deps-supply and functional-test lenses ended without a final report.
+25
+Same workflow: skeptic verdicts
+25 Nov
+One or two skeptics per finding for llm-output, secrets, host-ipc and simulator-physics. No skeptic ran for ui-logic.
+-
+attack/functional-test/out/results.json (session 40c62f4c)
+25 Nov, rewritten up to about 18:47
+Raw observations from driving the built UI in headless Edge. Not a findings list.
+-
+24 Nov multi-lens review output (w606fhdlo.output)
+24 Nov, 22:56
+20 confirmed and 3 rejected findings.
+23
+3. Findings status today (Table 1)
+Columns: claimed severity is what the attacker reported; the skeptic verdict is from the 25 Nov verification phase; status and evidence are from today&apos;s code. Paths are repo-relative. &quot;lib.rs&quot; etc. without a folder refer to the file named earlier in the same cell.
+ID
+Finding
+Lens (report #)
+Claimed severity
+Skeptic verdict (25 Nov)
+Status today
+Evidence in today&apos;s code
+V1
+Verifier accepts non-finite claimed probabilities (&quot;NaN&quot;, &quot;nan%&quot;, &quot;inf/inf&quot;, inf and -inf on duplicate keys), so an unchecked explanation can be labelled &quot;Verified by the simulator&quot;.
+llm-output #0; simulator-physics #0; host-ipc #0
+high (all three reports)
+Confirmed by all 6 skeptic outputs that answered; they rated it high x2, medium x2, low x2.
+NOT FIXED
+to_prob parses strings with str::parse::&lt;f64&gt;() and never checks finiteness [app/crates/qcore/src/lib.rs:441-458]; the mismatch test (t - c).abs() &gt; tol is false for NaN [lib.rs:553]; the Deutsch-Jozsa sum check behaves the same [lib.rs:547]; no is_finite call exists anywhere under app/crates [grep, 25 Nov]; the UI drops non-numbers and still prints the heading [app/crates/ui/src/tutor.rs:22-26, 274]. The Python prototype has the same logic [code/quantum_sim.py:137-150, 127].
+V2
+Out-of-range values are accepted: negative or &gt;1 probabilities pass, and raw keys that normalise to the same bitstring are summed (e.g. Deutsch-Jozsa {&quot;01&quot;: 1.5, &quot;10&quot;: -0.5} sums to 1 and passes).
+llm-output #1; simulator-physics #0 (part)
+high
+Confirmed (2 of 2); rated medium by both.
+NOT FIXED
+Every parsed value is added after norm_key with no range check [app/crates/qcore/src/lib.rs:525-528]; Deutsch-Jozsa checks only the total [lib.rs:545-549].
+V3
+Bell and Grover-2 have no total check, so extra junk keys each below the 0.02 tolerance still pass.
+llm-output #2
+medium
+Confirmed (1 of 1); rated low.
+NOT FIXED
+The total check sits only inside the Deutsch-Jozsa branch [app/crates/qcore/src/lib.rs:535-550]; other algorithms get only the per-key loop [lib.rs:551-556].
+V4
+Router parameters are silently replaced: f_kind spellings other than &quot;constant0&quot;, &quot;constant&quot;, &quot;constant1&quot; become balanced; a numeric &quot;marked&quot; falls back to item 11; n is truncated and clamped to 1..3. No notice is shown.
+simulator-physics #2
+medium
+Confirmed (1 answering skeptic); rated low.
+NOT FIXED
+[app/crates/qcore/src/lib.rs:412-435]; the substituted params go straight to the explainer and verifier with no flag [app/crates/desktop/src/pipeline.rs:44-49].
+V5
+The router&apos;s injection_attempt flag is only displayed; nothing acts on it. Mismatch text built from model-chosen keys is fed back into the repair prompt.
+llm-output #6
+low
+Confirmed (1 of 1); rated low.
+NOT FIXED
+The pipeline reads only in_scope, algorithm, params, false_premise and intent [app/crates/desktop/src/pipeline.rs:41-62]; the flag only adds a UI tag [app/crates/ui/src/tutor.rs:234-235]; mismatch text goes into verifier_feedback [app/crates/qcore/src/lib.rs:527; pipeline.rs:109-113].
+V6
+No limit on question length; the question is sent to the paid API up to three times (P1 once, P2 up to twice).
+llm-output #5
+low
+Confirmed (1 of 1); rated low.
+NOT FIXED
+The host only trims and rejects empty text [app/crates/desktop/src/main.rs:254, 265]; the textarea has no maxlength [app/crates/ui/src/tutor.rs:59-71]; grep for maxlength under app/crates finds nothing [grep, 25 Nov].
+V7
+After a reload (F5 / Ctrl+R), events from a still-running old question can merge into a new question with the same id; browser accelerator keys stay enabled in release builds.
+llm-output #3; host-ipc #2
+medium; low
+Confirmed (1 of 1 in each lens); rated medium and low.
+NOT FIXED
+No with_browser_accelerator_keys call exists [grep, 25 Nov; app/crates/desktop/src/main.rs:370-378]; run state restarts at id 0 on every page load [app/crates/ui/src/main.rs:28]; the next id is previous + 1 [app/crates/ui/src/state.rs:220]; the only filter is id equality [state.rs:158-162]; each ask runs on an untracked detached thread [app/crates/desktop/src/main.rs:268-275].
+V8
+The selected explanation step is not reset or clamped when the repaired explanation replaces the first one.
+llm-output #4; ui-logic #9
+low
+Confirmed by the llm-output skeptic (1 of 1, low); the ui-logic copy was not verified.
+NOT FIXED
+step is created once per ResultView [app/crates/ui/src/tutor.rs:193]; nothing resets it when the explanation memo changes [tutor.rs:215]; only the counter text is clamped [tutor.rs:324-325].
+V9
+The verdict reads &quot;The numbers do not match ... Even after one correction&quot; while the repair attempt is still running.
+ui-logic #1
+medium
+Not verified (no skeptic ran for the ui-logic lens).
+NOT FIXED (code unchanged)
+Verification is not cleared on &quot;repair&quot; or on a new explanation [app/crates/ui/src/state.rs:181-194]; the (false, _) arm ignores repaired and running [app/crates/ui/src/tutor.rs:276]; event order [app/crates/desktop/src/pipeline.rs:87, 104, 115].
+K1
+Gemini and Anthropic keys travel in custom headers (x-goog-api-key, x-api-key), which the HTTP client copies when following a redirect, including to another host over plain http.
+secrets #0
+high
+Confirmed (2 of 2); both rated low (only the provider&apos;s own TLS-verified endpoint can issue the redirect).
+NOT FIXED
+agent() sets only TLS, status handling and a timeout [app/crates/desktop/src/llm/mod.rs:259-268]; grep for max_redirects and https_only finds nothing [grep, 25 Nov]; keys in custom headers [app/crates/desktop/src/gemini.rs:53, 103, 119; app/crates/desktop/src/llm/anthropic.rs:63-71]. The ureq redirect behaviour itself is taken from the attack report, not re-read here.
+K2
+The key scrubber runs after error text is cut to 140 characters, so a long key echoed by a provider can leak in part into UI messages.
+secrets #1
+medium
+Confirmed (1 of 1); rated low.
+NOT FIXED
+Truncation happens inside api_message [app/crates/desktop/src/llm/mod.rs:285-294]; scrub does an exact-match replace afterwards [mod.rs:250-257, 419, 425, 445, 455; app/crates/desktop/src/main.rs:188].
+K3
+An explicit provider choice overrides an unambiguous key prefix, so e.g. an sk-ant- key can be sent to OpenAI&apos;s key-check endpoint.
+secrets #2; host-ipc #1
+medium
+Confirmed (2 of 2); rated medium.
+NOT FIXED
+The requested provider is returned before detect_provider is consulted [app/crates/desktop/src/main.rs:119-122]; a unit test asserts this behaviour [main.rs:417-420]; the UI provider choice is not reset after a save [app/crates/ui/src/main.rs:186, 197-200].
+K4
+.env is searched in the current directory and every ancestor (drive roots included), not just next to the exe; GEMINI_MODEL and GEMINI_FALLBACKS from it bypass the model-id check.
+secrets #3
+medium
+Confirmed (1 of 1); rated low. (The 24 Nov review had rejected a parity version of this item.)
+NOT FIXED
+[app/crates/desktop/src/config.rs:68-86] (current directory at 75-77); the module comment mentions only the executable&apos;s folder or a parent [config.rs:6-7]; env model values skip check_model_id [config.rs:146-149, 155-162 vs 201-208].
+K5
+Concurrent settings writes (save_key worker vs set_provider) could revert the learner&apos;s provider choice.
+secrets #4
+low
+Refuted (1 of 1): the claimed harm does not occur.
+NOT FIXED (code unchanged; judged not a defect)
+Unlocked read-modify-write [app/crates/desktop/src/config.rs:230-238]; one fixed temporary file name [config.rs:63-65].
+H1
+The CSP allows &apos;unsafe-inline&apos; in script-src although the page has no inline script.
+host-ipc #3
+low
+Disputed: 1 skeptic real/low, 1 &quot;hardening gap, not a reachable defect&quot;.
+NOT FIXED
+[app/crates/desktop/src/main.rs:61-64]; the page loads one external module script [app/crates/ui/index.html:11]; no HTML sink exists in the UI (section 5.5).
+S1
+Teleportation circuits are labelled &quot;Checked by the simulator&quot;, but the check compares only Bob&apos;s Z-basis probabilities, so a phase-wrong protocol (CZ missing or on the wrong qubit) still passes.
+simulator-physics #1
+high
+Disputed: 1 skeptic real/low, 1 not real; a third gave no output.
+NOT FIXED
+expect is a q2 marginal only [app/crates/ui/content/topics/teleportation.json:39, 57]; the gate compares probabilities only [app/crates/qcore/src/topic.rs:113-143]; the label is unconditional [app/crates/ui/src/atlas.rs:689].
+S2
+NaN or infinite angles (&quot;nan&quot;, &quot;1e999&quot;, &quot;pi/nan&quot;) pass parse_angle and the content gate.
+simulator-physics #3
+medium
+Confirmed (1 answering skeptic); rated low.
+NOT FIXED
+[app/crates/qcore/src/circuit.rs:72-91]; NaN comparison passes [app/crates/qcore/src/topic.rs:138]; the UI chip filter drops NaN entries [app/crates/ui/src/atlas.rs:638-640].
+S3
+theta is silently ignored on non-parametric gates, but the diagram still draws the angle.
+simulator-physics #4
+low
+Confirmed (1 answering skeptic); rated low.
+NOT FIXED
+theta is parsed for every op [app/crates/qcore/src/circuit.rs:204]; only P, RX, RY, RZ use it [circuit.rs:128-156]; the label is drawn from theta [app/crates/ui/src/atlas.rs:507-509, 566-572].
+S4
+Duplicate qubits in one gate are accepted (H on t=[0,0] acts as identity; SWAP on t=[q,q] does nothing).
+simulator-physics #5
+low
+Refuted: not reachable, no shipped content triggers it.
+NOT FIXED (code unchanged)
+No de-duplication of t or c [app/crates/qcore/src/circuit.rs:202-243].
+S5
+marginal() underflows (panic in debug builds) for a qubit index &gt;= n; the UI calls it without the gate&apos;s range check.
+simulator-physics #6
+low
+Refuted: not reachable from shipped content.
+NOT FIXED (code unchanged)
+[app/crates/qcore/src/circuit.rs:266-273]; UI call [app/crates/ui/src/atlas.rs:634-637]; the range check exists only in the gate [app/crates/qcore/src/topic.rs:118-120].
+S6
+phase_text prints negative integer multiples of pi and the radian fallback with an ASCII hyphen instead of U+2212.
+simulator-physics #7
+low
+Refuted: not reachable in the shipped app.
+NOT FIXED (code unchanged)
+The (k, 1) arm precedes the k &lt; 0 arm [app/crates/qcore/src/circuit.rs:285, 288]; fallback [circuit.rs:293].
+S7
+The Entanglement page says the four Bell states are &quot;the&quot; maximally entangled two-qubit states (there are infinitely many; the Bell states are one basis of them).
+simulator-physics #8
+low
+Confirmed (1 answering skeptic); rated low.
+NOT FIXED
+[app/crates/ui/content/topics/entanglement.json:34].
+U1
+The circuit &quot;Play&quot; timer panics the wasm module after the learner leaves the topic page (disposed signal read).
+ui-logic #0
+medium
+No skeptic. Observed in the 25 Nov headless run: &quot;Tried to access a reactive value that has already been disposed&quot;, then &quot;RuntimeError: unreachable&quot;.
+NOT FIXED
+The timer is never cancelled and reads signals with get_untracked [app/crates/ui/src/atlas.rs:648-673]; observation in results.json &quot;nav_while_playing&quot; [other session 40c62f4c, functional-test]; the tested ui_bg.wasm has the same SHA-256 as today&apos;s app/crates/ui/dist/ui_bg.wasm [sha256sum, 25 Nov].
+U2
+Play, Pause, Play within 1.7 s starts two timer chains, so the circuit steps at double speed.
+ui-logic #6
+low
+No skeptic. Observed in the 25 Nov headless run (play_race: double_timer true).
+NOT FIXED
+Pause and manual steps only set playing = false [app/crates/ui/src/atlas.rs:648-652, 678, 705, 707].
+U3
+With reduced motion, the hero captions and the over-label stay clipped outside the frozen window.
+ui-logic #2
+medium
+Not verified; not re-observed for this file.
+NOT FIXED (code unchanged)
+clip-path is fixed at the small window [app/crates/ui/styles/app.css:539-546]; the window is still measured and motion mounted [app/crates/ui/src/home.rs:343-352, 188-207].
+U4
+Atlas map nodes are role=&quot;link&quot; elements inside an svg with role=&quot;img&quot;, and their focus outline is removed (the attack agent computed a 1.05:1 focus-indicator contrast).
+ui-logic #3
+medium
+Not verified; the contrast figure is the attack agent&apos;s own calculation.
+NOT FIXED (code unchanged)
+[app/crates/ui/src/atlas.rs:161-166, 192; app/crates/ui/styles/app.css:609-610].
+U5
+The host&apos;s settings_error is never read by the UI, so a failed Remove or model change is silent.
+ui-logic #4
+medium
+No skeptic; a grep for this file confirms 0 uses in the UI.
+NOT FIXED
+The host sets it [app/crates/desktop/src/main.rs:204-206, 209-211, 222-224, 227-229]; Status has no such field [app/crates/ui/src/state.rs:44-60, 124-137]; grep settings_error under app/crates/ui finds 0 hits [grep, 25 Nov].
+U6
+Title-bar text is drawn with mix-blend-mode: difference; the attack agent computed 1.7-1.8:1 contrast over the coral block.
+ui-logic #5
+medium
+Not verified; contrast values are the attack agent&apos;s own calculation.
+NOT FIXED (code unchanged)
+[app/crates/ui/styles/app.css:68-77].
+U7
+The global Left/Right arrow handler also fires while a &lt;select&gt; has focus.
+ui-logic #7
+low
+Not verified.
+NOT FIXED (code unchanged)
+The filter excludes only input and textarea [app/crates/ui/src/main.rs:39-50].
+U8
+Any status event clears &quot;checking&quot; while a key check is still running, which re-enables Save.
+ui-logic #8
+low
+Not verified.
+NOT FIXED (code unchanged)
+[app/crates/ui/src/state.rs:135]; Save is disabled only while checking [app/crates/ui/src/main.rs:336-341].
+U9
+The .hero-over label animation never runs because the element has no data-scrub attribute.
+ui-logic #10
+low
+Not verified.
+NOT FIXED (code unchanged)
+[app/crates/ui/src/home.rs:367; app/crates/ui/styles/app.css:221-224].
+U10
+A topic with no next/related links (Teleportation) ends with an empty &quot;Keep going&quot; section.
+ui-logic #11
+low
+No skeptic. Observed in the 25 Nov headless run (teleportation keep_going: []).
+NOT FIXED
+The section is rendered unconditionally [app/crates/ui/src/atlas.rs:439-442]; empty lists [app/crates/ui/content/topics/teleportation.json:9-10].
+P1
+Repair feedback text differed from the Python prototype for bad-key and unparseable-value mismatches (the one 24 Nov finding the lead recorded as unfixed).
+24 Nov review, parity lens
+low
+Confirmed on 24 Nov.
+FIXED
+Python repr formatting is now used: py_str_repr and py_value_repr [app/crates/qcore/src/lib.rs:480-516], applied in both messages [lib.rs:527, 541-543]; tests assert the prototype forms [&apos;001&apos;], &apos;half&apos;, None, [0.5], {&apos;p&apos;: True} [lib.rs:619-631]; prototype [code/quantum_sim.py:107, 121].
+Totals: 1 FIXED, 32 NOT FIXED (of which 11 are &quot;code unchanged&quot; rows where the claim was refuted or never verified), 0 CANNOT TELL. No code change addressing any round-1 or round-2 attack finding was found. [Table 1; greps for with_browser_accelerator_keys, max_redirects, https_only, is_finite, maxlength and settings_error, 25 Nov]
+Correction to the lead&apos;s context: the repair-feedback wording item from 24 Nov (P1) is no longer open; it is fixed in today&apos;s code. [app/crates/qcore/src/lib.rs:527, 541-543, 619-631]
+4. 24 Nov review items re-checked (Table 2)
+Nine of the 20 confirmed 24 Nov findings, including the three high ones, were checked against today&apos;s code. The other 11 were not re-checked individually for this file.
+24 Nov finding (severity, lens)
+Status today
+Evidence in today&apos;s code
+Web view could be navigated by dropping a file or link onto it (high, security lens)
+FIXED
+Navigation allowed only to https://app.localhost/ and app://localhost/, new windows denied, drag-drop handler installed [app/crates/desktop/src/main.rs:366-369].
+Every host event remounted ResultView, resetting the chosen step (high, UI lens)
+FIXED
+Remount keyed only on the run id [app/crates/ui/src/tutor.rs:124-129].
+WebView2 user-data folder created next to the exe (high, build lens)
+FIXED
+Profile and settings live in %LOCALAPPDATA%\QuantumExplainer [app/crates/desktop/src/config.rs:40-43; app/crates/desktop/src/main.rs:316-319, 362].
+Window and WebView startup failures exited silently (medium, build lens)
+FIXED
+Panic hook and run() errors show a native message box [app/crates/desktop/src/main.rs:304-327].
+py_dumps unit test failed (medium, parity and build lenses)
+FIXED
+Test now expects escaped non-ASCII [app/crates/desktop/src/prompts.rs:228-237]; 36 tests pass [lead-measured, 25 Nov].
+Body read failure on HTTP 200 aborted the pipeline with no retry (medium, parity lens)
+FIXED
+A broken body read becomes a status-0 network error that the retry loop handles [app/crates/desktop/src/llm/mod.rs:274-283, 327-337].
+Safety-blocked or empty Gemini responses treated as empty answers (medium, parity lens)
+FIXED
+Blocked or empty candidates return an error with the block reason [app/crates/desktop/src/gemini.rs:62-67, 188-209].
+Offline / DNS failures retried as transient for about 200 s (low, parity lens)
+FIXED
+Only timeouts and dropped connections are retried; other status-0 errors fail fast [app/crates/desktop/src/llm/mod.rs:347-353].
+Dead-model set rebuilt for every question (low, parity lens)
+FIXED
+A process-wide set is copied into each client and updated on SwitchModel [app/crates/desktop/src/gemini.rs:12-15, 29-31, 69-72].
+5. Security and privacy model, from the code
+5.1 Process and trust boundary
+One executable. The interface is embedded at build time (rust-embed over crates/ui/dist) and served through a custom app:// protocol; there is no local web server and no open port. [app/crates/desktop/src/main.rs:1-5, 26-28, 53-69, 364]
+The asset handler looks up only the URI path in the embedded map; anything else gets a 404. [app/crates/desktop/src/main.rs:53-69]
+The page reaches the host only through window.ipc.postMessage; the host pushes events by calling window.__qe with the event JSON encoded as a string literal, so no event text is interpolated into script code. [app/crates/ui/src/bridge.rs:6-32; app/crates/desktop/src/main.rs:394-397]
+The host accepts eight commands (hello, win, save_key, open_key_page, clear_key, set_provider, list_models, ask); malformed JSON and unknown commands are ignored. [app/crates/desktop/src/main.rs:144-149, 277]
+IPC origin check: a message is handled only if the request URI host is app.localhost or the scheme is app. [app/crates/desktop/src/main.rs:383-388]
+Provider endpoints, key pages and default models are compile-time constants; the page can name a provider only by id, and unknown ids resolve to nothing. [app/crates/desktop/src/llm/mod.rs:25-27, 47-205]
+open_key_page opens only a fixed &amp;&apos;static preset URL through ShellExecuteW; an unknown id falls back to the Gemini key page. [app/crates/desktop/src/main.rs:71-81, 192-196]
+5.2 Web view lock-down
+Navigation is allowed only to https://app.localhost/ and app://localhost/; new-window requests are denied; a drag-drop handler stops dropped files turning into navigations. [app/crates/desktop/src/main.rs:366-369]
+DevTools and the default context menus are enabled only in debug builds. [app/crates/desktop/src/main.rs:377, 382]
+Browser accelerator keys (reload, print) are not disabled in any build (finding V7). [app/crates/desktop/src/main.rs:370-378; grep, 25 Nov]
+The custom protocol is served as https so the page is a secure context. [app/crates/desktop/src/main.rs:374]
+Every asset response carries Cache-Control: no-cache and this CSP: default-src &apos;self&apos;; script-src &apos;self&apos; &apos;wasm-unsafe-eval&apos; &apos;unsafe-inline&apos;; style-src &apos;self&apos; &apos;unsafe-inline&apos;; font-src &apos;self&apos;; img-src &apos;self&apos; data:; connect-src &apos;self&apos;. The comment above it says only &apos;wasm-unsafe-eval&apos; is needed (finding H1). The header sets no base-uri, form-action or frame-ancestors directive. [app/crates/desktop/src/main.rs:59-64]
+5.3 API keys
+Lookup order per provider: Windows Credential Manager (service &quot;QuantumExplainer&quot;, account &quot;&lt;provider&gt;_api_key&quot;), then the provider&apos;s environment variable, then a .env file. [app/crates/desktop/src/config.rs:4-8, 17, 99-106, 127-139]
+The app never writes a key to a file: settings.json is a struct with only provider and models, and a unit test checks that a stray api_key field is dropped on re-save. [app/crates/desktop/src/config.rs:2, 21-29, 250-262]
+Only the last four characters of a key leave the native process (key_hint in the status event). [app/crates/desktop/src/main.rs:83-116; app/crates/desktop/src/llm/mod.rs:244-248]
+Saving a key: format check (20-400 characters, no whitespace or control characters), then a live check with the provider, then storage, then making that provider active; all on a worker thread. [app/crates/desktop/src/main.rs:161-190; app/crates/desktop/src/config.rs:191-199, 210-217]
+The key field is type=password with autocomplete off and is cleared as soon as the key is sent to the host. [app/crates/ui/src/main.rs:309-317, 200]
+Keys go only in request headers, never in URLs: x-goog-api-key (Gemini), x-api-key (Anthropic), Authorization: Bearer (OpenAI-compatible providers). [app/crates/desktop/src/gemini.rs:53, 103, 119; app/crates/desktop/src/llm/anthropic.rs:63-71; app/crates/desktop/src/llm/openai.rs:95-96, 112, 125]
+Errors and notices pass through scrub, which replaces an exact copy of the key with its last four characters (subject to finding K2). [app/crates/desktop/src/llm/mod.rs:250-257, 411-426, 438-456; app/crates/desktop/src/main.rs:188]
+Remove deletes the Credential Manager entry; a missing entry counts as success. [app/crates/desktop/src/config.rs:219-227]
+.env is git-ignored at the repo root and in app/. A .env file exists at the repo root; its contents were not read. [.gitignore:1; app/.gitignore:5; test -f, 25 Nov]
+5.4 Network and TLS
+HTTP goes through ureq 3.5.2 with native TLS (SChannel on Windows) and the platform certificate verifier, that is, the OS certificate store. [app/crates/desktop/Cargo.toml:22; app/crates/desktop/src/llm/mod.rs:259-268]
+Every preset base URL and key page is https; a unit test enforces it. [app/crates/desktop/src/llm/mod.rs:531]
+The redirect policy is left at the library default (finding K1). [app/crates/desktop/src/llm/mod.rs:261-267]
+Response bodies are read up to 32 MB. [app/crates/desktop/src/llm/mod.rs:270-283]
+Timeouts per attempt: 20 s for the Gemini and Anthropic key checks; 30 s for model lists and OpenAI-compatible key checks; 120 s for Gemini calls and the Qwen key check; 600 s for Anthropic and OpenAI-compatible calls. [app/crates/desktop/src/gemini.rs:31, 103, 115; app/crates/desktop/src/llm/anthropic.rs:23, 169, 175; app/crates/desktop/src/llm/openai.rs:13, 119, 122, 139]
+Retries wait 10, 30 and 60 s on 429, 500, 502, 503, 504, 529 and on Google busy/quota strings. DNS, TLS and no-route failures fail at once. [app/crates/desktop/src/llm/mod.rs:296-375]
+5.5 Model output handling
+No HTML sink in the UI. A grep for inner_html, set_inner_html, innerHTML, outer_html, outerHTML, insert_adjacent, eval(, document.write, dangerously, srcdoc and Function( over app/crates/ui (dist excluded) matched only the three &lt;link href&gt; lines in index.html. [grep, 25 Nov; app/crates/ui/index.html:8-10]
+Model text is rendered as Leptos text nodes: the raw explanation, step text, kets, practice question, hint and answer. [app/crates/ui/src/tutor.rs:294-296, 308-314, 350-366]
+Atlas *emphasis* is made by splitting the string on &quot;*&quot; into &lt;em&gt; elements, not by parsing HTML. [app/crates/ui/src/atlas.rs:384-394]
+Prompt templates are filled in a single pass, so learner text such as &quot;{params}&quot; is never substituted again. [app/crates/desktop/src/prompts.rs:83-104, 221-226]
+Ground truth always comes from the router&apos;s normalised parameters, never from the claim extractor&apos;s echo. [app/crates/desktop/src/pipeline.rs:100-104]
+Out-of-scope questions skip the later stages; algorithms the simulator cannot check are shown as &quot;Explained, not verified&quot;. [app/crates/desktop/src/pipeline.rs:51-56, 90-93; app/crates/ui/src/tutor.rs:263-268]
+Refusals, content-filter stops and safety blocks become errors rather than empty answers. [app/crates/desktop/src/llm/anthropic.rs:94-114; app/crates/desktop/src/llm/openai.rs:35-60; app/crates/desktop/src/gemini.rs:62-67, 188-209]
+The UI allows one question at a time (the Ask button is disabled while running); this guard resets on a page reload (finding V7). [app/crates/ui/src/tutor.rs:36-38]
+5.6 Data on disk and logging
+The app writes one file of its own: settings.json, via a .tmp file and rename, in %LOCALAPPDATA%\QuantumExplainer. These are the only file-write calls in the desktop crate. [app/crates/desktop/src/config.rs:40-66; grep fs::write|File::create|OpenOptions, 25 Nov]
+The WebView2 profile lives in the same folder. [app/crates/desktop/src/main.rs:316-319, 362]
+Questions, explanations and answers are not stored by the app; they are sent to the chosen provider with the learner&apos;s own key. [app/crates/desktop/src/main.rs:252-276; grep above]
+No runtime logging: the exe uses the Windows GUI subsystem (no console), and the only eprintln calls are in the two ignored live tests. [app/crates/desktop/src/main.rs:7; app/crates/desktop/src/gemini.rs:182-183; app/crates/desktop/src/llm/mod.rs:498-499]
+A host panic shows a message box with the panic text, then exits; release builds use panic = &quot;abort&quot;. [app/crates/desktop/src/main.rs:304-327; app/Cargo.toml:17-22]
+UI (wasm) panics go to the WebView console through console_error_panic_hook; the console is not reachable in release because DevTools are off. [app/crates/ui/src/main.rs:18; app/crates/desktop/src/main.rs:382]
+5.7 Repository hygiene
+8,036 files from build folders named app/target-attack-* are staged in the git index, 81 of them .exe files. These folders were left by the attack runs. [git ls-files --cached, 25 Nov]
+app/.gitignore ignores target/ but not target-* folders. [app/.gitignore:1]
+Another session&apos;s scan of staged files reported key-shaped strings inside those build outputs, most of them matching test literals in the source. Whether any is a real secret was not established for this file. [other session 40c62f4c task output; not re-checked]
+No .env file is tracked; .env.example is tracked (its contents were not read). [git ls-files --cached, 25 Nov]
+6. Testing and quality evidence
+6.1 Unit test inventory (Table 3)
+36 tests pass: 24 in desktop and 12 in qcore. 2 live tests are ignored and there are 0 doc-tests. The ui crate has no tests (0 #[test] in app/crates/ui/src); there are 38 #[test] functions in total in desktop and qcore. [lead-measured; docs/native-app/build/test_names.txt; grep #[test], 25 Nov]
+Group
+Tests (count)
+What the group shows
+Where
+Verifier and Python parity (qcore)
+tests::ground_truth_matches_python_prototype, tests::verifier_matches_python_prototype, tests::norm_params_matches_python_prototype, tests::traces_are_normalised_and_consistent, tests::kets_read_naturally (5)
+Ground truth for Bell, DJ (n = 1-3, all oracle kinds) and Grover-2 (all marked items) equals the prototype; mismatch messages use the prototype wording; every trace step has norm 1; ket text formatting.
+app/crates/qcore/src/lib.rs:560-653
+General circuit simulator (qcore)
+circuit::tests::angles_parse, bell_matches_real_simulator, phases_and_identities, controls_swap_and_toffoli, teleportation_by_deferred_measurement (5)
+Angle text parsing; Bell state; S·S = Z, H·Z·H = X, RY(pi/3) gives 0.75/0.25; CCX, SWAP and bad-op errors (missing control, control = target, out of range); teleportation marginal and norm at every step.
+app/crates/qcore/src/circuit.rs:367-456
+Atlas content gate (qcore)
+topic::tests::atlas_content_passes_the_gate, topic::tests::gate_catches_a_wrong_claim_and_a_dead_link (2)
+All shipped topic files parse, file names equal ids, and every check in section 6.2 passes; a deliberately wrong probability and a dead link are caught.
+app/crates/qcore/src/topic.rs:185-234
+Key handling and provider routing (desktop)
+llm::tests::keys_never_leak_into_messages, prefixes_route_only_when_unambiguous, every_detected_provider_exists_and_ids_are_unique, key_check_wording; tests::save_key_provider_resolution; config::tests::stored_settings_hold_no_key, accounts_keep_the_old_gemini_name, model_ids_are_plain, stored_model_wins_over_default (9)
+scrub replaces a full key with its last four characters; prefix detection; all preset URLs are https and ids unique; settings.json has no key field even if a file contains one; model-id character rules. save_key_provider_resolution also asserts the provider-override behaviour flagged in K3.
+app/crates/desktop/src/llm/mod.rs:504-549; app/crates/desktop/src/main.rs:412-428; app/crates/desktop/src/config.rs:240-281
+Provider wire formats (desktop)
+llm::anthropic::tests (6): headers_carry_version_and_beta, body_has_no_sampling_or_thinking_and_enables_fallbacks, fallbacks_and_effort_only_where_documented, parse_joins_text_blocks_and_skips_others, refusal_is_an_error_and_content_is_not_read, empty_answer_is_an_error; llm::openai::tests (4): body_is_system_then_user_with_nothing_else, parse_reads_first_choice, parse_errors_on_refusal_filter_and_empty, model_ids_from_both_list_shapes; gemini::tests::model_list_keeps_generators_and_strips_prefix (1) (11)
+Request bodies and headers have the documented shape; refusals, content-filter stops and empty answers become errors; model lists parse in both shapes. All offline (no network).
+app/crates/desktop/src/llm/anthropic.rs:201-283; app/crates/desktop/src/llm/openai.rs:151-192; app/crates/desktop/src/gemini.rs:155-168
+Prompt handling (desktop)
+prompts::tests::embedded_prompts_parse, fill_is_single_pass_and_keeps_json_braces, py_dumps_matches_python, parse_json_recovers_wrapped_objects (4)
+The four embedded prompts parse with the expected temperature and JSON MIME type; template filling is single-pass (learner text such as {params} is not substituted again); JSON output matches CPython json.dumps; fenced JSON is recovered.
+app/crates/desktop/src/prompts.rs:203-244
+Live network tests (ignored)
+gemini::live::live_router_call; llm::live::live_active_provider_router_call (2, #[ignore])
+One real router call each; costs a request; not run in the 25 Nov count.
+app/crates/desktop/src/gemini.rs:170-186; app/crates/desktop/src/llm/mod.rs:486-502
+Not covered by any test: non-finite or out-of-range verifier input (V1-V3); IPC handlers, CSP, navigation and origin checks; redirect handling; anything in the UI crate; the interaction between scrub and truncation (keys_never_leak_into_messages uses a short message). [app/crates/qcore/src/lib.rs:612-641; app/crates/desktop/src/llm/mod.rs:534-540; grep #[test], 25 Nov]
+6.2 The Atlas content gate
+What it checks for each topic: the section exists; the id is lowercase-kebab; every prereq, next and related link points at an existing topic other than itself; at least one text block exists; and every circuit block runs. [app/crates/qcore/src/topic.rs:146-183]
+For each circuit block: the labels have the right width and only 0/1; the stated probabilities sum to 1 within 4 x TOL; every simulated outcome (all qubits, or the marginal over expect.qubits) matches the text within TOL = 5e-4. [app/crates/qcore/src/topic.rs:109-143]
+The test also requires each file name to equal the topic id, and at least one topic to exist. [app/crates/qcore/src/topic.rs:191-216]
+The UI shows each circuit&apos;s outcome chips recomputed live by the same simulator. [app/crates/ui/src/atlas.rs:632-646]
+Gap: the gate runs only under cargo test. ui/build.rs only embeds the JSON, and build.ps1 has no test step, while the spec says &quot;A page with a failing check does not ship&quot;. [app/crates/ui/build.rs:1-23; app/build.ps1:20-39; app/docs/atlas-spec.md:12]
+Gap: it compares measurement probabilities only, so phase is invisible to it (finding S1). NaN angles also slip through (S2). [app/crates/qcore/src/topic.rs:136-141]
+Gap: the spec asks for at least 3 text blocks per page; the gate requires 1, and all three shipped pages have 2. [app/docs/atlas-spec.md:78-79; app/crates/qcore/src/topic.rs:171-173; node count of block types, 25 Nov]
+The 25 Nov runs of the gate passed (part of the 12 qcore tests). [lead-measured]
+6.3 Manual and live evidence, dated (Table 4)
+Date
+Evidence
+Source
+22 Nov 2026
+Python prototype, Gemini 3.5 Flash-Lite run run_20261122_1710: automatic checks 12/13 pass (test 9 misrouted); LLM-assisted rubric 4 Pass / 5 Partial / 4 Fail. Claude cross-check: 13/13 automatic, rubric 7/6/0. Explainer versions (12 runs each): verified v1 5/12, v2 12/12, v3 12/12; clean JSON 0/12, 0/12, 12/12; about 615/394/178 words.
+context: lead, from M2 repo files (code/, test-data/). These describe the Python prototype, not the Rust app.
+24 Nov 2026
+Dev build, Gemini gemini-3.5-flash-lite: a Bell-state question ran end to end; verdict &quot;Verified by the simulator&quot;; footer &quot;Answered by gemini-3.5-flash-lite (4) in 16.6 s&quot;. Screenshot: docs/native-app/figures/10-tutor-live-run-24nov.png (older bar-chart visuals).
+context: 24 Nov live run
+24 Nov 2026
+A fake API key was rejected with &quot;Google rejected this key: API key not valid&quot;; Gemini sometimes returned HTTP 503 &quot;high demand&quot; and the app retried with a visible notice.
+context: 24 Nov live run; message text matches app/crates/desktop/src/gemini.rs:105
+24 Nov 2026
+4-lens code review (parity, security, UI, build): 23 findings, 20 confirmed by adversarial verifiers, 3 rejected; lead reports 19 fixed.
+context; review output .../4368db8d.../tasks/w606fhdlo.output
+25 Nov 2026
+cargo test -p qcore -p desktop: 36 passed, 0 failed, 2 ignored (desktop 24 + 2 ignored, qcore 12, doc-tests 0).
+lead-measured; docs/native-app/build/test_names.txt. Same counts in other sessions&apos; logs at 04:44 and 18:33.
+25 Nov 2026
+Release build: QuantumExplainer.exe 6.8 MB, 94 s; ui_bg.wasm 3900 KB, ui.js 43 KB, app.css 46 KB.
+lead-measured; ui_bg.wasm is 3,993,860 bytes [ls, 25 Nov]
+25 Nov 2026
+Headless Edge, preview mode (no host, window.ipc absent; Tutor fed mocked events, footer &quot;Answered by test-model in 1.2 s&quot;): wasm panic after leaving a playing circuit; double Play timer; four uncaught &quot;AbortError: Transition was skipped&quot; promise rejections on rapid navigation; Atlas search with emoji, regex characters, an XSS string, NUL, RTL and 10,000-character input produced no injected elements (xss: 0, imgs: 0) and no errors.
+other session 40c62f4c, attack/functional-test/out/results.json, read about 18:45; bundle SHA-256 equals today&apos;s dist
+25 Nov 2026
+Attack-round proofs of concept (localhost only, fake keys, scratch copies of agent(), api_message() and scrub()): custom key headers followed a 302 to another host over http; scrubbing after truncation leaked 105 and 22 key characters; NaN claims gave ok = true.
+claims in prior-findings.json; not re-run for this file
+25 Nov 2026
+UI screenshots of the current build in preview mode (headless Edge, 1440x900 at 1.5x): 16 files 01-home-hero.png ... 09-settings.png.
+context; docs/native-app/figures
+7. Known limitations and risks visible in code
+Windows only. The app uses windows-sys (ShellExecuteW, MessageBoxW), the WebView2 builder extensions and the Windows Credential Manager. On other targets open_in_browser does nothing and fatal() exits without a message. [app/crates/desktop/Cargo.toml:25; app/crates/desktop/src/main.rs:71-81, 304-314, 349-378]
+It needs the Microsoft Edge WebView2 Runtime; the startup error message says so. [app/crates/desktop/src/main.rs:323-326]
+On Windows 10 there is no Mica backdrop; the page paints its own background. [app/crates/desktop/src/main.rs:355-359]
+If LOCALAPPDATA is unset, settings cannot be saved (&quot;LOCALAPPDATA is not set.&quot;) and the WebView2 context gets no data folder. [app/crates/desktop/src/config.rs:41-43, 59; app/crates/desktop/src/main.rs:362]
+The Tutor verifier covers only the Bell state, Deutsch-Jozsa with n = 1..3 and 2-qubit Grover; every other question is shown as unverified. [app/crates/qcore/src/lib.rs:408-437; app/crates/ui/src/tutor.rs:263-268]
+Atlas circuits are capped at 8 qubits. [app/crates/qcore/src/circuit.rs:14, 184-187]
+There is no cancel. Each question runs on a detached thread with up to 4 model calls, timeouts of up to 600 s per attempt and retry waits of 10/30/60 s, so a run can last many minutes. [app/crates/desktop/src/main.rs:268-275; app/crates/desktop/src/llm/mod.rs:296-297; app/crates/desktop/src/llm/openai.rs:13]
+Saving a Qwen key costs one real generation request (there is no documented model list to check against). [app/crates/desktop/src/llm/openai.rs:115-128; app/crates/desktop/src/llm/mod.rs:113-129]
+Text caps: provider error text is cut to 140 characters, OpenAI refusal text to 200, and Anthropic answers are limited to 16,000 output tokens. [app/crates/desktop/src/llm/mod.rs:293; app/crates/desktop/src/llm/openai.rs:40; app/crates/desktop/src/llm/anthropic.rs:20]
+The Milestone 2 evaluation was run on the Python prototype with Gemini. The Rust app sends the same prompt text, but Anthropic and OpenAI-compatible requests omit temperature and the JSON response type. Prototype results therefore do not carry over to those providers. [app/crates/desktop/src/prompts.rs:4-5; app/crates/desktop/src/llm/anthropic.rs:3-10; app/crates/desktop/src/llm/openai.rs:4-6]
+The provider defaults and model ids are said to have been checked against provider documentation fetched on 25 Nov; that check was not repeated here. [app/crates/desktop/src/llm/mod.rs:5-6]
+The Atlas is unfinished: 3 of the 40 planned topics exist. Sections without topics show &quot;coming soon&quot;, and three of the six sections (gates, algorithms, machines) have none. [app/docs/atlas-spec.md:84-129; app/crates/ui/content/sections.json:1-8; app/crates/ui/content/topics/*.json; app/crates/ui/src/atlas.rs:217]
+The expansion notes for further topics are research drafts, not content files. [app/docs/expansion/02-foundations.md:1-5; app/docs/expansion/03-error-correction.md:1-5]
+app/README.md is stale. It describes key handling and the network layer for Gemini only, and the Lab with bars, while the code has 11 providers. [app/README.md:16, 23, 39-42; app/crates/desktop/src/llm/mod.rs:47-200]
+On rapid navigation, view-transition promises reject without a handler; this was observed as uncaught AbortError in the headless run. [app/crates/ui/src/bridge.rs:47-66; results.json rapid_nav (other session)]
+There are no TODO, FIXME, XXX or HACK markers in the Rust sources. [grep, 25 Nov]
+8. Unknown / not measured
+Whether any real provider actually redirects API calls or echoes a full key in an error (K1 and K2 depend on that). Not measured.
+Live end-to-end runs with any provider other than Gemini. Not measured.
+An evaluation of the Rust app on the 13-test Milestone 2 suite, with any provider. Not measured.
+The release exe&apos;s behaviour for the reload, accelerator-key and drag-drop paths (the GUI was not run for this file).
+Visual findings U3, U4 and U6 (reduced-motion clipping, focus visibility, title-bar contrast). Not re-observed; the contrast figures are the attack agent&apos;s own calculations.
+Whether the staged app/target-attack-* build outputs contain any real secret. Not established.
+Dependency advisories (RUSTSEC / cargo audit): the deps-supply lens filed no report. Unknown.
+The Credential Manager persistence type: the round-1 secrets report says entries use Enterprise (roaming) persistence; not re-checked in the keyring source.
+Where WebView2 puts its profile when LOCALAPPDATA is unset. Unknown.
+The 48 Lab lines in results.json such as &quot;prob 13% expected 12%&quot; for 3-qubit Deutsch-Jozsa (1/8 = 12.5%) look like a display-rounding difference in the test script. Not investigated.
+Test coverage percentage. Not measured.
+The remaining 11 confirmed 24 Nov findings were not re-checked individually here.
+The 25 Nov headless run used mocked host events (&quot;test-model&quot;), so it is not evidence of live model behaviour.

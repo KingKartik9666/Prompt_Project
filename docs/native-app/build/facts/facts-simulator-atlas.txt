@@ -1,0 +1,473 @@
+Fact file: simulator, verifier and Atlas content
+Quantum Explainer native app (k:\Prompt\app). Compiled on 25 Nov 2026 from the code as it is today. Area: the qcore simulator, the claim verifier, the Lab and the Atlas content. Every bullet ends with its evidence in square brackets.
+Nothing was built or run to make this file. Statements marked &quot;code reading&quot; were worked out from the cited lines and were not executed. Statements marked &quot;prior claim&quot; come from another session&apos;s scratch files and were checked against today&apos;s code.
+0. Evidence legend
+path:line is a file in the repository, relative to k:\Prompt. For example, app/crates/qcore/src/lib.rs:441 means line 441 of the simulator core.
+&quot;lead-measured&quot; marks a fact the lead measured on 25 Nov 2026 and passed in the task brief.
+&quot;code reading&quot; marks a consequence derived from the cited lines without running the code.
+&quot;prior claim&quot; marks a finding from the earlier security &quot;attack&quot; sessions (scratchpad files). It is reported here only after it was checked against today&apos;s source.
+1. Where the code lives
+The qcore crate is described as &quot;Statevector simulator, step traces and claim verifier shared by the desktop host and the WebAssembly UI&quot;. It depends only on serde and serde_json. [app/crates/qcore/Cargo.toml:3,10-12]
+The workspace uses edition 2024 with rust-version 1.100. serde_json is version 1.0.154 with the preserve_order feature, so JSON objects keep their original key order. [app/Cargo.toml:7-8,15]
+The same qcore code runs in two places. The UI (WebAssembly) builds Lab traces with qcore::trace. The desktop host verifies Tutor claims with qcore::verify. [app/crates/ui/src/lab.rs:30; app/crates/desktop/src/pipeline.rs:102]
+lib.rs holds the three verifiable circuits, their step traces and the claim verifier. Its header calls it a &quot;port of code/quantum_sim.py, same behaviour&quot;. [app/crates/qcore/src/lib.rs:1-8]
+circuit.rs is a general n-qubit statevector simulator with complex amplitudes, used by the Atlas topic pages. [app/crates/qcore/src/circuit.rs:1-9]
+topic.rs is the Atlas content model and the content gate. [app/crates/qcore/src/topic.rs:1-5]
+Line counts today: lib.rs 654, circuit.rs 457, topic.rs 235, atlas.rs 761, lab.rs 195, viz.rs 235, atlas-spec.md 129, 02-foundations.md 287, 03-error-correction.md 347. [wc -l, 25 Nov 2026]
+Bit order: qubit 0 is the most significant (leftmost) bit of a basis label, so &quot;10&quot; means q0 = 1 and q1 = 0. This holds in both simulators and in the Atlas spec. [app/crates/qcore/src/lib.rs:7-8; app/crates/qcore/src/circuit.rs:3-4; app/docs/atlas-spec.md:37]
+2. The three verifiable algorithms
+These are the only algorithms the Tutor&apos;s verifier can check. Ground truth is the measurement distribution of the final trace step.
+Algorithm (key)
+Title shown
+Qubits
+Parameters
+Ground truth (final probabilities)
+Bell (bell)
+Bell state
+2
+none
+00: 0.5, 11: 0.5
+Deutsch–Jozsa (deutsch_jozsa)
+Deutsch–Jozsa
+n = 1, 2 or 3 input qubits. The helper qubit is not simulated.
+f_kind: constant0 &quot;f(x) = 0&quot;, constant1 &quot;f(x) = 1&quot;, balanced &quot;f(x) = parity(x)&quot;
+constant0 or constant1: all-zeros label = 1. balanced (parity): all-ones label = 1, e.g. n = 2 gives 11: 1.0
+Grover-2 (grover2)
+Grover search
+2
+marked = 0..3, shown as 00, 01, 10, 11
+marked label = 1.0, e.g. marked 01 gives 01: 1.0
+Evidence: app/crates/qcore/src/lib.rs:20-83 (FKind, Algo, labels, qubits), app/crates/qcore/src/lib.rs:387-391 (truth), test tests::ground_truth_matches_python_prototype at app/crates/qcore/src/lib.rs:568-578.
+All three circuits keep real amplitudes, so lib.rs stores them as f64, not complex numbers. [app/crates/qcore/src/lib.rs:7]
+Gates in lib.rs: h() and cnot() act on a real n-qubit vector. The Deutsch–Jozsa oracle multiplies each amplitude by (−1)^f(x). For &quot;balanced&quot;, f(x) is the parity of x (number of 1 bits mod 2). [app/crates/qcore/src/lib.rs:87-120]
+Grover-2 oracle: the marked amplitude changes sign. Diffusion: every amplitude a becomes 2·mean − a. [app/crates/qcore/src/lib.rs:344,352-355]
+The Deutsch–Jozsa &quot;balanced&quot; case simulates one specific balanced function, parity. The verifier therefore checks only P(all zeros), because other balanced functions give other non-zero outcomes. [app/crates/qcore/src/lib.rs:42,536]
+probabilities() returns |amplitude|² rounded to 6 decimals and drops entries ≤ 1e-9. It avoids printing &quot;-0.0&quot;. [app/crates/qcore/src/lib.rs:122-141]
+params_json() echoes the normalised parameters: Bell {}, Deutsch–Jozsa {&quot;n&quot;, &quot;f_kind&quot;}, Grover {&quot;marked&quot;: two-bit string}. [app/crates/qcore/src/lib.rs:76-82]
+Deutsch–Jozsa with constant1 ends in −|0…0⟩, a global phase. The ket test asserts &quot;−|00⟩&quot; for n = 2. [app/crates/qcore/src/lib.rs:609; test tests::kets_read_naturally]
+3. Step traces
+A Trace holds qubits, wire names, the basis labels, circuit columns, steps and an optional note. A Step holds a title, a detail sentence, the ket of the state after the step, the column it applies (None = initial state) and the amplitudes. [app/crates/qcore/src/lib.rs:159-178]
+Column kinds: H{wires} (one H box per listed wire), Cnot{control, target}, Block{label} (a box across all wires, used for oracle and diffusion) and Measure (a meter on every wire). [app/crates/qcore/src/lib.rs:145-157]
+Algorithm
+Step titles, in order
+Columns drawn
+Wires
+Evidence
+Bell
+Start · Hadamard on q0 · CNOT q0 → q1 · Measure (4 steps)
+H on q0 · CNOT 0→1 · Measure
+q0, q1
+app/crates/qcore/src/lib.rs:228-263
+Deutsch–Jozsa
+Start · Hadamard on every input · Oracle U_f (one query) · Hadamard again · Measure (5 steps)
+H on all · Block &quot;U_f&quot; · H on all · Measure
+x0 … x(n−1)
+app/crates/qcore/src/lib.rs:264-329
+Grover-2
+Start · Hadamard on both · Oracle marks the item · Diffusion 2|s⟩⟨s| − I · Measure (5 steps)
+H on q0, q1 · Block &quot;Oracle&quot; · Block &quot;Diffuse&quot; · Measure
+q0, q1
+app/crates/qcore/src/lib.rs:330-383
+The Deutsch–Jozsa trace carries the note &quot;Helper qubit |−⟩ omitted: it only turns f(x) into a sign.&quot; Bell and Grover have no note. [app/crates/qcore/src/lib.rs:261,327,381]
+The Measure step repeats the pre-measurement amplitudes. The trace simulates no collapse or sampling. [app/crates/qcore/src/lib.rs:248-254,309-315,363-369]
+The step texts include two complexity statements. One says &quot;A classical algorithm can need 2ⁿ⁻¹ + 1 queries&quot;. The other says &quot;In general Grover needs about √N queries, a quadratic speedup&quot;. [app/crates/qcore/src/lib.rs:311,365]
+Ket formatting: a common magnitude is factored out when every non-zero amplitude has the same size. The denominators are √2, 2, 2√2, 4, or else √k. A lone term keeps its sign. Unequal amplitudes are printed with 3 decimals. [app/crates/qcore/src/lib.rs:180-220]
+Tested ket strings: &quot;(|00⟩ + |11⟩)/√2&quot; (Bell after CNOT), &quot;(|00⟩ − |01⟩ + |10⟩ + |11⟩)/2&quot; (Grover marked 01 after the oracle), &quot;|01⟩&quot; (after diffusion) and &quot;−|00⟩&quot; (Deutsch–Jozsa constant1 final state). [app/crates/qcore/src/lib.rs:600-610; test tests::kets_read_naturally]
+Normalisation test: every step has norm 1 within 1e-9, 2^n amplitudes and a valid column index. It runs on Bell, Grover marked 2, Deutsch–Jozsa n = 3 balanced and Deutsch–Jozsa n = 1 constant1. [app/crates/qcore/src/lib.rs:580-598; test tests::traces_are_normalised_and_consistent]
+4. What the Lab shows
+The Lab runs entirely on the WebAssembly simulator, so it works without an AI key. [app/crates/ui/src/lab.rs:1-2]
+A segmented control offers &quot;Bell state&quot;, &quot;Deutsch–Jozsa&quot; and &quot;Grover search&quot;. The defaults are Grover with marked item |01⟩, and for Deutsch–Jozsa, n = 2 balanced. [app/crates/ui/src/lab.rs:19-22,79-83]
+Parameters: Grover has four &quot;Marked item&quot; buttons |00⟩ |01⟩ |10⟩ |11⟩. Deutsch–Jozsa has &quot;Input qubits&quot; 1/2/3 and &quot;Oracle&quot; buttons labelled &quot;f(x) = 0&quot;, &quot;f(x) = 1&quot; and &quot;f(x) = parity(x)&quot;. Bell shows the text &quot;H on q0, then CNOT from q0 to q1. No parameters.&quot; [app/crates/ui/src/lab.rs:86-130; app/crates/qcore/src/lib.rs:38-44]
+The subtitle shows the algorithm title and the final probabilities as &quot;P(k) = v&quot; joined by &quot; · &quot;. ½ and ¼ print as fractions; other values print with up to 3 decimals. [app/crates/ui/src/lab.rs:55-60,75-77,186-195]
+The captured screen reads &quot;Grover search: P(01) = 1&quot;. [docs/native-app/figures/06-lab-start.png]
+Changing the circuit or a parameter resets to step 0. Back and &quot;Next gate&quot; buttons and a row of clickable step ticks (labelled with the step titles) move through the trace. The ← and → keys step as well. [app/crates/ui/src/lab.rs:31-35,42-53,149-181]
+Circuit panel: an SVG drawn from the trace columns, with wire labels such as &quot;q0 |0⟩&quot;. A highlight rectangle slides to the active column and is hidden on the Start step. The trace note sits under the circuit. [app/crates/ui/src/viz.rs:108-197; app/crates/ui/src/lab.rs:134-137]
+State panel: the step title, the ket (an aria-live=&quot;polite&quot; region), one circle per basis state, and the step&apos;s detail sentence. [app/crates/ui/src/lab.rs:139-146]
+Circle notation: the outer ring means probability 1, and the filled disc&apos;s radius is |a|, so its area is the probability. A line from the centre points up for a + amplitude and down for a − amplitude, and the fill colour also follows the sign. Each disc shows the signed amplitude and a percentage. The code credits this notation to Johnston, Harrigan &amp; Gimeno-Segovia, Programming Quantum Computers (O&apos;Reilly, 2019). [app/crates/ui/src/viz.rs:6-25,37-101]
+With 2 qubits the four discs sit on a 2×2 grid: columns follow the first qubit and rows the second, so a Bell state lies on the diagonal. [app/crates/ui/src/viz.rs:27-35]
+In the screenshot, |00⟩ is top-left, |10⟩ top-right, |01⟩ bottom-left and |11⟩ bottom-right. [docs/native-app/figures/06-lab-start.png]
+Per a code comment, the disc animation changes only scale, rotate and opacity, so transitions run on the compositor. This was not measured. [app/crates/ui/src/viz.rs:40-41]
+Other places that reuse qcore traces: the Home page shows a Grover marked-01 trace. The Tutor&apos;s empty state shows the Bell final state. The Tutor&apos;s &quot;Simulated final state&quot; panel shows the verified algorithm&apos;s final ket and circles. [app/crates/ui/src/home.rs:312,341; app/crates/ui/src/tutor.rs:174,336-347]
+5. Router parameters → typed algorithm (norm_params)
+The desktop pipeline normalises parameters only when the router (P1) says the question is in scope. Ground truth always comes from these normalised parameters and never from the claim extractor&apos;s echo. [app/crates/desktop/src/pipeline.rs:41-45,100]
+Router algorithm
+Rule
+Evidence
+bell
+Bell. Any params are ignored.
+app/crates/qcore/src/lib.rs:411
+grover2
+&quot;marked&quot; is turned into text, and only &apos;0&apos; and &apos;1&apos; characters are kept (norm_key). It must then be 00, 01, 10 or 11; anything else, or a missing value, becomes 11. Tests: {&quot;marked&quot;: &quot;|10&gt;&quot;} gives marked 2 (10), and null params give marked 3 (11).
+app/crates/qcore/src/lib.rs:412-419,645-646
+deutsch_jozsa
+n: a JSON number is truncated (2.9 gives 2); a string is parsed as an integer, else 2; a bool gives 0 or 1; anything else gives 2. The result is clamped to 1..3. f_kind is trimmed and lower-cased: &quot;constant0&quot; or &quot;constant&quot; gives constant0, &quot;constant1&quot; gives constant1, and anything else (including missing) gives balanced. Tests: {&quot;n&quot;: &quot;2&quot;, &quot;f_kind&quot;: &quot;constant&quot;} gives n = 2 constant0, and {&quot;n&quot;: 9} gives n = 3 balanced.
+app/crates/qcore/src/lib.rs:420-435,647-651
+anything else
+None: not simulator-verifiable. The Tutor shows &quot;Explained, not verified&quot;. Test: norm_params(&quot;other_quantum&quot;) is None.
+app/crates/qcore/src/lib.rs:436,652; app/crates/desktop/src/pipeline.rs:90-93; app/crates/ui/src/tutor.rs:263-268
+All five behaviours above are covered by test tests::norm_params_matches_python_prototype (app/crates/qcore/src/lib.rs:643-653).
+Code reading: a numeric &quot;marked&quot; such as 1 becomes the text &quot;1&quot;, which is not a 2-bit label, so it falls back to 11. The number 10 becomes &quot;10&quot;, i.e. marked 2. The Python prototype does the same, since _norm_key applies str() first. [app/crates/qcore/src/lib.rs:400-405,413-416; code/quantum_sim.py:132-134,157-158]
+Code reading: spellings such as &quot;constant_1&quot; or &quot;Constant-1&quot; fall through to balanced. [app/crates/qcore/src/lib.rs:429-433]
+Code reading: a question about n = 4 is clamped and verified against the n = 3 simulation. 4-bit keys then fail the key-length rule. A prior probe exercised this case (verify-simulator-physics-2-0), but its output was not found. [app/crates/qcore/src/lib.rs:427,541-544]
+6. Verifier rules (verify)
+The rules below are applied in this order.
+Tolerance: the pipeline calls verify(algo, probs, 0.02). The tolerance is absolute and applies to each outcome. [app/crates/desktop/src/pipeline.rs:102]
+The claims are the &quot;probabilities&quot; field of the claim extractor&apos;s (P3) JSON. If it is missing, the claim is Null. [app/crates/desktop/src/pipeline.rs:99-101]
+Ground truth = truth(algo), the rounded final distribution. [app/crates/qcore/src/lib.rs:520]
+If the claim is a JSON object, each value goes through to_prob. A parsed value is added under norm_key(key), so keys that normalise to the same label are summed. A value that cannot be parsed gives the mismatch &quot;{key}: unparseable value {Python repr}&quot;. [app/crates/qcore/src/lib.rs:523-529]
+A claim that is not an object (null, list, string, number) is treated as making no claims. [app/crates/qcore/src/lib.rs:523]
+If nothing was claimed and nothing was unparseable, the mismatch is &quot;no final probability stated&quot;. [app/crates/qcore/src/lib.rs:532-534]
+Deutsch–Jozsa only: [app/crates/qcore/src/lib.rs:535-550]
+Truth is cut to {0…0: P(0…0)}. Only the all-zeros key is compared, and only if something was claimed. [app/crates/qcore/src/lib.rs:537-540]
+Every claimed key must have n bits, else &quot;keys must be n-bit input-register strings, got [&apos;…&apos;]&quot;. [app/crates/qcore/src/lib.rs:541-544]
+A sum check fails with &quot;claimed probabilities sum to X.XXX, expected 1&quot; when the sum exceeds 1 + tol, or when any non-zero key is claimed and |sum − 1| &gt; tol. [app/crates/qcore/src/lib.rs:545-549]
+Comparison: for Bell and Grover, every key in truth ∪ claimed is compared; for Deutsch–Jozsa, only the all-zeros key. A missing value counts as 0. A mismatch is |t − c| &gt; tol, reported as &quot;{key}: claimed c, simulated t&quot;. [app/crates/qcore/src/lib.rs:531,551-556]
+ok = no mismatches. [app/crates/qcore/src/lib.rs:557]
+Key normalisation keeps only &apos;0&apos; and &apos;1&apos; characters, so &apos;|01&gt;&apos;, &apos; 01 &apos; and &apos;|0&gt;|1&gt;&apos; all become &quot;01&quot;. Code reading: a key with no 0/1 characters (e.g. &quot;x&quot;) becomes the empty label &quot;&quot;. [app/crates/qcore/src/lib.rs:395-398]
+Accepted probability formats (to_prob)
+Input
+Result
+Evidence
+JSON number
+its f64 value
+app/crates/qcore/src/lib.rs:443
+true / false
+1.0 / 0.0
+app/crates/qcore/src/lib.rs:444
+string ending in &quot;%&quot;
+number ÷ 100 (&quot;50%&quot; → 0.5)
+app/crates/qcore/src/lib.rs:447-448
+string &quot;a/b&quot;
+a ÷ b; both parts must parse and b ≠ 0 (&quot;1/2&quot; → 0.5)
+app/crates/qcore/src/lib.rs:449-451
+any other string
+parsed as f64 (&quot;0.5&quot; → 0.5; whitespace trimmed)
+app/crates/qcore/src/lib.rs:446,453
+null, list, object
+None, which is reported as an unparseable value
+app/crates/qcore/src/lib.rs:456
+Tests: {&quot;|00&gt;&quot;: &quot;1/2&quot;, &quot;|11&gt;&quot;: &quot;50%&quot;} verifies as Bell; &quot;half&quot;, null, [0.5] and {&quot;p&quot;: true} are reported as &apos;half&apos;, None, [0.5] and {&apos;p&apos;: True} (app/crates/qcore/src/lib.rs:623-636, test tests::verifier_matches_python_prototype).
+Repair loop and verdicts
+On a mismatch, P2 is re-run once with the feedback &quot;Verifier feedback: a simulator found these errors in your previous answer: … Correct result: {truth as a Python dict}. Fix the explanation.&quot; There are at most 2 attempts. [app/crates/desktop/src/pipeline.rs:69,106-117]
+Tutor verdict headings: &quot;Verified by the simulator&quot; (ok on the first try), &quot;Corrected, then verified&quot; (ok after the repair), &quot;The numbers do not match&quot; (still wrong after one correction) and &quot;Explained, not verified&quot; (not checkable). [app/crates/ui/src/tutor.rs:262-276]
+The &quot;Verified&quot; body text says &quot;Every final probability in the explanation matches the simulation within 0.02.&quot; The Compare panel marks a row as matching when |claimed − simulated| ≤ 0.02. [app/crates/ui/src/tutor.rs:274; app/crates/ui/src/viz.rs:210]
+NaN and infinity, as of today&apos;s code
+There is no is_finite or is_nan check anywhere in the app&apos;s Rust sources. A search of app/crates found none. [grep over app/crates, 25 Nov 2026; app/crates/qcore/src/lib.rs:441-458]
+Rust&apos;s float parser accepts &quot;inf&quot;, &quot;infinity&quot; and &quot;nan&quot; with an optional sign, ignoring case. Caveat: I read the 1.99.0 std source on this PC; the app builds with 1.100.0. [Rust std library/core/src/num/float_parse.rs:27-40 and num/imp/dec2flt/parse.rs:199-229 (1.99.0 source); toolchain fact: lead-measured]
+Code reading: so the strings &quot;NaN&quot;, &quot;nan%&quot; and &quot;inf/inf&quot; all become NaN in to_prob, and &quot;inf&quot; becomes +∞. The &quot;a/b&quot; branch only rejects b = 0, not b = ∞. [app/crates/qcore/src/lib.rs:447-453]
+Code reading: every comparison with NaN is false. So |t − NaN| &gt; 0.02 adds no mismatch, and the Deutsch–Jozsa sum checks are false too. A claim of &quot;NaN&quot; therefore gives ok = true. [app/crates/qcore/src/lib.rs:547,553,557]
+Code reading: +∞ on its own fails, because |t − ∞| = ∞ &gt; tol. But &quot;inf&quot; and &quot;-inf&quot; on two keys that normalise to the same label sum to NaN and pass. [app/crates/qcore/src/lib.rs:526,553]
+serde_json 1.0.154 turns a NaN f64 into null when the result is sent to the UI. The Tutor&apos;s probs() drops non-numbers. Code reading: the learner would see &quot;Verified by the simulator&quot; over a claimed column showing &quot;—&quot;. [serde_json-1.0.154 src/value/from.rs:49 and src/value/ser.rs:156-157; app/Cargo.lock:3262-3263; app/crates/ui/src/tutor.rs:22-26,274; app/crates/ui/src/viz.rs:208-218]
+Status: NOT FIXED. A prior high-severity claim (&quot;Verifier marks NaN probabilities as a match, so a wrong answer is shown as &apos;Verified by the simulator&apos;&quot;) is still true. Two scratch copies with a fix exist. One filters to_prob to 0..=1; the other requires is_finite and 0..=1. Today&apos;s lib.rs differs from both only in to_prob, i.e. neither fix was applied. [prior claim: 40c62f4c…/scratchpad/prior-findings.json (llm-output #0); diff of app/crates/qcore/src/lib.rs against verify-simulator-physics-0-0/fixed and -0-1/qcore_fixed]
+No test covers NaN, infinity or out-of-range values. The qcore test list has none. [docs/native-app/build/test_names.txt:28-39]
+The Python prototype has the same structure: float(s) followed by abs(t - c) &gt; tol. Python&apos;s float() also accepts &quot;nan&quot;, so the prototype very likely shares this gap. This was not executed. [code/quantum_sim.py:127,137-150]
+Other verifier gaps (prior claims re-checked against today&apos;s code)
+No range check: negative values and values above 1 are accepted. For Deutsch–Jozsa n = 2 balanced, {&quot;00&quot;: 0.0, &quot;01&quot;: 1.5, &quot;10&quot;: -0.5} sums to exactly 1, so it passes. Status: not fixed; code reading agrees with the prior claim. [app/crates/qcore/src/lib.rs:525-526,545-549; prior claim llm-output #1]
+No sum check for Bell or Grover. Extra keys, each within 0.02, pass: e.g. Bell {&quot;00&quot;: 0.5, &quot;11&quot;: 0.5, &quot;01&quot;: 0.019, &quot;10&quot;: 0.019} totals 1.038 and passes. Status: not fixed; code reading agrees with the prior claim. [app/crates/qcore/src/lib.rs:551-556; prior claim llm-output #2]
+Code reading, not seen on screen: a correct, verified Deutsch–Jozsa balanced claim such as {&quot;10&quot;: 1.0} sends truth {&quot;00&quot;: 0.0} to the UI. Compare then shows a &quot;00&quot; row (no claimed value) and a &quot;10&quot; row (claimed 1.0 against simulated 0). Both rows are marked as not matching, under the heading &quot;Verified by the simulator&quot;. [app/crates/qcore/src/lib.rs:537-540; app/crates/ui/src/viz.rs:201-222; app/crates/ui/src/tutor.rs:271-282]
+The 24 Nov &quot;repair text differs from Python&quot; item
+It appears fixed for the two cases it named. Unparseable values are printed by a port of Python repr (py_value_repr: None, True/False, quoted strings, lists, dicts). Bad Deutsch–Jozsa keys use py_str_repr, giving e.g. &quot;got [&apos;001&apos;]&quot;. The test verifier_matches_python_prototype asserts these exact strings. [app/crates/qcore/src/lib.rs:474-516,541-544,612-641]
+Possible remaining differences, not verified: the comparison loop runs over a sorted BTreeSet in Rust but over a Python set, whose order is not fixed, so mismatch order may differ. Floats are formatted with Rust&apos;s {:?} versus Python&apos;s str(), which could differ for extreme values. Thanks to preserve_order, the unparseable-value loop follows the original key order, as Python does. [app/crates/qcore/src/lib.rs:531,551-554; code/quantum_sim.py:110,125-128; app/Cargo.toml:15]
+7. General circuit simulator (circuit.rs)
+Complex type: a hand-written C { re: f64, im: f64 } with add, mul, scale, norm2, abs, arg (in (−π, π]) and polar. There is no external complex-number crate. [app/crates/qcore/src/circuit.rs:16-52; app/crates/qcore/Cargo.toml:10-12]
+MAX_QUBITS = 8. initial() rejects 0 or more than 8 qubits with &quot;qubits must be 1..=8&quot;, so the state has at most 2⁸ = 256 amplitudes. [app/crates/qcore/src/circuit.rs:14,184-188]
+Start state: all zeros, or init, a string of exactly n characters that are each 0 or 1. [app/crates/qcore/src/circuit.rs:115-117,189-198]
+Gate
+Definition in code
+Needs θ
+Evidence
+I, X, Y, Z
+identity and the Pauli matrices
+no
+app/crates/qcore/src/circuit.rs:133-136
+H
+(1/√2)[[1, 1], [1, −1]]
+no
+app/crates/qcore/src/circuit.rs:137
+S, SDG
+diag(1, i), diag(1, −i)
+no
+app/crates/qcore/src/circuit.rs:138-139
+T, TDG
+diag(1, e^(iπ/4)), diag(1, e^(−iπ/4))
+no
+app/crates/qcore/src/circuit.rs:140-141
+P(θ)
+diag(1, e^(iθ))
+yes
+app/crates/qcore/src/circuit.rs:142
+RX(θ), RY(θ)
+e^(−iθX/2), e^(−iθY/2) as cos/sin of θ/2
+yes
+app/crates/qcore/src/circuit.rs:143-150
+RZ(θ)
+diag(e^(−iθ/2), e^(iθ/2))
+yes
+app/crates/qcore/src/circuit.rs:151-154
+SWAP
+exchanges its two targets (any controls apply)
+no
+app/crates/qcore/src/circuit.rs:221-230
+Controls: the gate name is upper-cased, and each leading &quot;C&quot; adds one implied control (CX = X with 1 control, CCX = X with 2; likewise CZ, CY, CH, CP, CRY, CS, CSWAP). The aliases are CNOT (X, 1 control), TOFFOLI (X, 2) and FREDKIN (SWAP, 1). [app/crates/qcore/src/circuit.rs:159-175]
+When controls are implied, c must hold exactly that many. A gate name without a leading C may take any number of explicit controls in c, e.g. {&quot;g&quot;: &quot;X&quot;, &quot;c&quot;: [0, 1], &quot;t&quot;: [2]}. [app/crates/qcore/src/circuit.rs:205-208,217; app/docs/atlas-spec.md:42]
+Validation errors: a qubit index ≥ n, no target, a qubit that is both control and target, SWAP without exactly two targets, an unknown gate, and a parametric gate with no theta (&quot;RX needs theta&quot;). Errors from run() are prefixed &quot;step k:&quot;. [app/crates/qcore/src/circuit.rs:129,155,209-222,250]
+A single-qubit gate with several targets is applied to each target in the same step. [app/crates/qcore/src/circuit.rs:95,232-242]
+Angle parsing: a JSON number is taken as radians. Text has its whitespace removed, is lower-cased and has π replaced by &quot;pi&quot;. It is first tried as a plain number; otherwise it is read as an optional sign, a coefficient with optional &quot;*&quot;, &quot;pi&quot;, and an optional &quot;/den&quot;. den = 0 is rejected. [app/crates/qcore/src/circuit.rs:54-92]
+Angle test: &quot;pi/4&quot;, &quot;-3pi/4&quot;, &quot;2*pi/3&quot;, &quot;π&quot; and &quot;0.5&quot; parse correctly; &quot;pi/0&quot; and &quot;x&quot; are rejected. [app/crates/qcore/src/circuit.rs:378-386; test circuit::tests::angles_parse]
+Outputs: run() returns every state (states[0] is the initial one). probs() gives unrounded probabilities. marginal() sums probabilities over chosen qubits. phase_text() prints multiples of π with denominators 1, 2, 3, 4, 6 or 8. ket() prints ±, ±i phases with common denominators up to 8 (64 terms), and otherwise 3-decimal coefficients with e^(iφ). [app/crates/qcore/src/circuit.rs:177-182,246-365]
+Tests: bell_matches_real_simulator gives &quot;(|00⟩ + |11⟩)/√2&quot;. phases_and_identities checks S·S on |1⟩ = −|1⟩, H·Z·H = X, H then S = &quot;(|0⟩ + i|1⟩)/√2&quot;, and RY(π/3) = 0.75/0.25. controls_swap_and_toffoli checks CCX on |110⟩ = |111⟩, SWAP, and the errors for a missing control, control = target, and an out-of-range qubit. teleportation_by_deferred_measurement checks a q2 marginal of 0.75/0.25 and norm 1 after every step. [app/crates/qcore/src/circuit.rs:388-456]
+Edge behaviours (code reading; prior probes exist; none fixed)
+theta is silently ignored on gates that take none (e.g. Z with theta &quot;pi/4&quot; acts as plain Z). [app/crates/qcore/src/circuit.rs:128-156]
+Duplicate targets are not rejected. H with t = [0, 0] applies H twice (identity). SWAP with t = [0, 0] does nothing. [app/crates/qcore/src/circuit.rs:221-242]
+parse_angle accepts &quot;nan&quot; and &quot;inf&quot; through its plain-number path. A NaN angle makes every amplitude NaN, and check_circuit&apos;s per-outcome comparison is then false, so the content gate would not flag it. Today&apos;s content uses only &quot;pi/3&quot; as text angles. [app/crates/qcore/src/circuit.rs:74-76; app/crates/qcore/src/topic.rs:136-140; app/crates/ui/content/topics/*.json]
+marginal() has no range check of its own. check_circuit rejects an out-of-range expect.qubits before calling it. [app/crates/qcore/src/circuit.rs:266-273; app/crates/qcore/src/topic.rs:117-120]
+8. Atlas content model
+Sections (sections.json, 6 today)
+id
+title
+blurb
+pages built
+foundations
+Foundations
+What a qubit is, what measuring it does, and why phase matters.
+1
+many-qubits
+Many qubits
+How qubits combine, what entanglement is, and what you cannot copy.
+1
+gates
+Gates and circuits
+The operations a quantum computer applies, and how circuits are drawn and read.
+0 (coming soon)
+protocols
+Protocols
+Short procedures that use entanglement to move or protect information.
+1
+algorithms
+Algorithms
+Where quantum computers beat classical ones, and exactly how.
+0 (coming soon)
+machines
+Real machines
+Noise, error correction, hardware, and what quantum computers can and cannot do.
+0 (coming soon)
+Evidence: app/crates/ui/content/sections.json:2-7; pages built counted from app/crates/ui/content/topics/*.json (25 Nov 2026).
+Topic pages that exist today (3)
+id (file)
+title
+section
+level
+blocks
+links
+superposition
+Superposition
+foundations
+beginner
+9: text 2, math 1, circuit 3, misconception 2, practice 1
+prereqs none; next entanglement; related teleportation
+entanglement
+Entanglement
+many-qubits
+beginner
+8: text 2, circuit 3, misconception 2, practice 1
+prereqs superposition; next teleportation; related none
+teleportation
+Quantum teleportation
+protocols
+intermediate
+7: text 2, circuit 2, misconception 2, practice 1
+prereqs entanglement, superposition; next none; related none
+Evidence: app/crates/ui/content/topics/superposition.json:2-11, entanglement.json:2-10, teleportation.json:2-10; block counts by script over the JSON files, 25 Nov 2026.
+Sources listed in the pages (titles as written; not checked by me): superposition cites Nielsen &amp; Chuang ch. 1. Entanglement cites Nielsen &amp; Chuang ch. 1–2 and J. S. Bell (1964). Teleportation cites Bennett et al. (PRL 70, 1895, 1993), Bouwmeester et al. (Nature 390, 575, 1997) and Nielsen &amp; Chuang ch. 1. [app/crates/ui/content/topics/superposition.json:72-74; entanglement.json:81-84; teleportation.json:76-80]
+Interactive circuit blocks in today&apos;s content (8)
+page
+block
+title
+circuit
+stated outcome (expect)
+superposition
+2
+An equal superposition
+1 qubit: H q0
+0: 0.5, 1: 0.5
+superposition
+4
+Interference: H twice
+1 qubit: H, H
+0: 1.0
+superposition
+5
+An unequal superposition
+1 qubit: RY(&quot;pi/3&quot;)
+0: 0.75, 1: 0.25
+entanglement
+1
+Making a Bell state
+2 qubits: H q0; CX c0→t1
+00: 0.5, 11: 0.5
+entanglement
+3
+Another Bell state
+2 qubits, init 01: H q0; CX c0→t1
+01: 0.5, 10: 0.5
+entanglement
+4
+One qubit alone looks like noise
+2 qubits: H q0; CX c0→t1; Z q0
+over [q1]: 0: 0.5, 1: 0.5
+teleportation
+2
+Teleporting a state with P(0) = ¾
+3 qubits: RY(&quot;pi/3&quot;) q0; H q1; CX 1→2; CX 0→1; H q0; CX 1→2; CZ 0→2
+over [q2]: 0: 0.75, 1: 0.25
+teleportation
+3
+Teleporting |1⟩
+3 qubits, init 100: H q1; CX 1→2; CX 0→1; H q0; CX 1→2; CZ 0→2
+over [q2]: 1: 1.0
+Evidence: app/crates/ui/content/topics/superposition.json:23-54; entanglement.json:18-63; teleportation.json:23-58. Block numbers are 0-based, as the gate reports them (app/crates/qcore/src/topic.rs:174-178).
+The teleportation captions state that the corrections are written as controlled gates (deferred measurement), as the spec requires. [app/crates/ui/content/topics/teleportation.json:26; app/docs/atlas-spec.md:33]
+Content JSON schema
+Field
+Meaning (as coded)
+Evidence
+id
+lowercase-kebab; must equal the file name
+app/crates/qcore/src/topic.rs:79,158-160,204-206
+section
+a section id from sections.json
+app/crates/qcore/src/topic.rs:80,155-157
+title, kicker, summary
+strings; kicker = one-line hook shown on map and in search; summary = 2–3 sentences
+app/crates/qcore/src/topic.rs:81-85
+level
+beginner | intermediate | advanced
+app/crates/qcore/src/topic.rs:86,101-107
+prereqs, next, related
+lists of topic ids (default empty)
+app/crates/qcore/src/topic.rs:87-92
+keywords
+extra search words (default empty)
+app/crates/qcore/src/topic.rs:93-95
+blocks
+text {heading?, body} · math {expr, caption?} · circuit {title, circuit, expect, caption?} · misconception {myth, truth} · practice {question, answer, hint?} · note {title, body}
+app/crates/qcore/src/topic.rs:37-75,96
+circuit
+{qubits, init?, ops: [{g, t, c, theta?, note?}]}
+app/crates/qcore/src/circuit.rs:94-119
+expect
+{qubits? (default all, in order), probs: label → probability; missing labels mean 0}
+app/crates/qcore/src/topic.rs:27-35
+sources
+[{title, url?}] (default empty)
+app/crates/qcore/src/topic.rs:18-25,97-98
+On a page, text bodies are split into paragraphs at blank lines, and *word* is rendered as emphasis. [app/crates/ui/src/atlas.rs:383-395]
+Source URLs are not rendered; only the title is shown in the Sources list. [app/crates/ui/src/atlas.rs:422,443-448]
+9. The content gate
+The gate is cargo test -p qcore, specifically the test topic::tests::atlas_content_passes_the_gate. It loads sections.json and every topics/*.json file and fails on any problem. [app/crates/qcore/src/topic.rs:190-216; app/docs/atlas-spec.md:6]
+What the gate checks:
+Every file parses into the schema, and each file name equals its id. [app/crates/qcore/src/topic.rs:200-210]
+Topic ids are unique and lowercase-kebab, and each topic&apos;s section exists. [app/crates/qcore/src/topic.rs:150-160]
+Link integrity: every prereq, next and related id points at a topic file that exists, and no topic links to itself. [app/crates/qcore/src/topic.rs:161-170]
+Each page has at least one text block. [app/crates/qcore/src/topic.rs:171-173]
+Every circuit runs (valid gates, qubits, controls, angles), and expect.qubits is in range. [app/crates/qcore/src/topic.rs:113-120]
+Every expect label has the right number of bits (0/1 only). The stated probabilities sum to 1 within 4 × TOL = 2e-3. [app/crates/qcore/src/topic.rs:125-135]
+Every simulated outcome matches the stated value within TOL = 5e-4 (labels not stated count as 0). [app/crates/qcore/src/topic.rs:109-110,136-141]
+The negative test gate_catches_a_wrong_claim_and_a_dead_link builds a topic with next = [&quot;nowhere&quot;] and a claim of 0.9/0.1 for H|0⟩. It asserts both &quot;missing topic nowhere&quot; and &quot;simulator gives 0.5&quot; errors. [app/crates/qcore/src/topic.rs:218-234]
+Both topic tests pass, and qcore reports &quot;12 passed; 0 failed; 0 ignored&quot;. [docs/native-app/build/test_names.txt:37,39,40]
+The whole run was 36 passed, 0 failed, 2 ignored (live network tests). [lead-measured]
+What the gate does not check:
+It does not enforce the spec&apos;s page mix: at least 3 text blocks, at least 1 misconception, and at least 1 practice question. [app/crates/qcore/src/topic.rs:146-183; app/docs/atlas-spec.md:78-82]
+It does not enforce the spec&apos;s word target of 900–1600 words. [app/crates/qcore/src/topic.rs:146-183; app/docs/atlas-spec.md:21]
+It does not enforce a kicker of 90 characters or fewer. [app/crates/qcore/src/topic.rs:146-183; app/docs/atlas-spec.md:55]
+It does not check that link ids come from the master list. [app/crates/qcore/src/topic.rs:146-183; app/docs/atlas-spec.md:86]
+It does not check that sources exist. [app/crates/qcore/src/topic.rs:146-183]
+Code reading: the gate compares only computational-basis (Z-basis) probabilities, so it cannot see phase errors. CZ is diagonal, so removing the final CZ correction from the teleportation circuit leaves the q2 marginal 0.75/0.25 unchanged, and the block would still pass. A prior probe tested exactly this (&quot;teleport WITHOUT CZ&quot;); its output was not found. [app/crates/qcore/src/topic.rs:113-143; app/crates/qcore/src/circuit.rs:260-273]
+Is the gate enforced?
+The build script does not run the tests. It builds the UI to wasm, runs wasm-bindgen and builds the desktop exe. [app/build.ps1:22-38]
+At runtime the UI silently skips a topic file that fails to parse. A circuit that fails to run shows &quot;This circuit could not be simulated.&quot; [app/crates/ui/src/atlas.rs:24-30,588-591]
+So the spec&apos;s rule &quot;A page with a failing check does not ship&quot; holds only if someone runs cargo test -p qcore before building. [app/docs/atlas-spec.md:12; app/build.ps1:22-38]
+Content is embedded at build time. ui/build.rs writes include_str! constants for sections.json and the sorted topics/*.json, so the Atlas works offline. [app/crates/ui/build.rs:1-23]
+10. The Atlas screens
+The map has a root dot &quot;Quantum computing&quot;, one hub per section on an ellipse, and each section&apos;s topics fanned outward. It grows breadth-first from the root: each dot takes 900 ms to pop, each edge 1100 ms to grow, with a 140 ms stagger. [app/crates/ui/src/atlas.rs:82-103,200-254]
+Hub sub-label: a section with 0 topics shows &quot;coming soon&quot; and is drawn as an empty, non-clickable dot; 1 topic shows &quot;1 topic&quot;; n topics show &quot;n topics&quot;. [app/crates/ui/src/atlas.rs:213-221]
+In the section list below the map, an empty section shows &quot;Pages for this section are being written.&quot; [app/crates/ui/src/atlas.rs:331,340]
+&quot;Coming soon&quot; therefore means only that no topic file with that section id exists yet. The map does not list the planned pages. [app/crates/ui/src/atlas.rs:213-222]
+Today, Gates and circuits, Algorithms and Real machines show &quot;coming soon&quot;. The captured map shows &quot;coming soon&quot; above Real machines and &quot;1 topic&quot; on Foundations and Many qubits. [app/crates/ui/content/topics/*.json; docs/native-app/figures/03-atlas-map.png]
+Cross-links between built topics are drawn from prerequisites after the map has grown. [app/crates/ui/src/atlas.rs:245-252,127-136]
+The hero line is generated as &quot;{n} topics so far, from what a qubit is to how quantum computers search. Every circuit on these pages is run by the simulator inside this app.&quot; Today it reads &quot;3 topics so far…&quot;. [app/crates/ui/src/atlas.rs:352; docs/native-app/figures/03-atlas-map.png]
+Observation: no search or Grover page exists yet, so &quot;how quantum computers search&quot; describes a planned page. [app/docs/atlas-spec.md:119; app/crates/ui/content/topics/]
+Search is case-insensitive. Every word typed must appear in the title, kicker, summary or keywords. Non-matching map nodes are dimmed. The count reads &quot;1 page&quot;, &quot;n pages&quot; or &quot;No page yet for that. Try a broader word.&quot; [app/crates/ui/src/atlas.rs:286-308,363-371]
+A topic page shows breadcrumbs, a &quot;Section · Level&quot; eyebrow, the title and kicker, and a neighbourhood map (prerequisites left, next right, related below). Then come the summary, the blocks, &quot;Keep going&quot; cards (next + related) and the Sources list. [app/crates/ui/src/atlas.rs:256-282,397-453]
+Misconception blocks are labelled &quot;Common belief&quot; and &quot;Actually&quot;. Practice blocks are labelled &quot;Try it&quot;, with a collapsible Hint and Answer. [app/crates/ui/src/atlas.rs:472-489]
+The interactive circuit block opens on the final state. &quot;Play&quot; steps through it every 1700 ms, alongside Back, step ticks and &quot;Next gate&quot;. It shows each op&apos;s note, or &quot;After step i.&quot; when there is none. Gates assemble as the block scrolls into view (CSS animation-range). [app/crates/ui/src/atlas.rs:583-715]
+The circuit block&apos;s state view uses complex circle notation (radius |a|, phase line at arg a), and the live ket is shown below it. [app/crates/ui/src/atlas.rs:631,698-701,737-761]
+Result chips read &quot;P(k) = v&quot; for each outcome above 1e-9. Each chip is flagged ok when it matches the stated value within TOL. The header reads &quot;Checked by the simulator&quot;, plus &quot;for qubit q2&quot; when expect.qubits is set. [app/crates/ui/src/atlas.rs:632-647,686-690]
+Gate drawing: a controlled X is drawn as ⊕, a controlled-Z target as a dot, and SWAP as ×. Other gates are boxes, with the angle printed by phase_text, e.g. &quot;π/3&quot;. [app/crates/ui/src/atlas.rs:507-581]
+11. Planned versus built
+The spec&apos;s master topic list has 40 rows. By section: foundations 7, many-qubits 6, gates 9, protocols 4, algorithms 9, machines 5. By level: beginner 12, intermediate 17, advanced 11. [app/docs/atlas-spec.md:84-129, rows counted with awk on 25 Nov 2026]
+Built today: 3 of 40 (superposition, entanglement, teleportation), i.e. 37 planned topics have no page. No Algorithms page exists yet, including deutsch-jozsa and grover, even though the Lab and the Tutor cover those algorithms. [app/crates/ui/content/topics/*.json; app/docs/atlas-spec.md:116-124]
+The prereqs in the files are a subset of the master list&apos;s, because the gate rejects links to topics that do not exist. Superposition has none (the master list says bits-and-qubits). Entanglement has only superposition (the master list adds multi-qubit-states). Teleportation matches. [app/docs/atlas-spec.md:91,98,112; app/crates/ui/content/topics/*.json; app/crates/qcore/src/topic.rs:161-165]
+Pages against the spec: each page has 2 text blocks (the spec asks for at least 3). Prose is about 491 words (superposition), 454 (entanglement) and 403 (teleportation), against a target of about 900–1600. Each page has 2 misconceptions, 1 practice question and at least 2 circuits. [whitespace word count over all prose fields by script, 25 Nov 2026; app/docs/atlas-spec.md:21,78-82]
+Kicker lengths: superposition 66, entanglement 61 and teleportation 71 characters, all within the spec&apos;s 90. [character count by script, 25 Nov 2026; app/docs/atlas-spec.md:55]
+The expansion research notes (both dated 2026-11-25) propose new pages. 02-foundations.md ranks 20 candidates plus 5 shorter ones; 03-error-correction.md ranks 22. Most proposed ids (e.g. reduced-states, bit-flip-code) are not in the master list. None is built. [app/docs/expansion/02-foundations.md:3,19-265; app/docs/expansion/03-error-correction.md:3,19-323]
+Their numbers were checked differently. 02 says its probabilities came from a JS port of qcore&apos;s gates. 03 says it ran the real qcore::circuit::run in a scratch crate. Neither the numbers nor their external sources were re-checked for this file. [app/docs/expansion/02-foundations.md:5-9; app/docs/expansion/03-error-correction.md:5-7]
+Simulator features those notes say would unlock the most pages: a reduced-state or density-matrix view, Pauli expectation values, mid-circuit measurement with feed-forward and reset, a Bloch readout, noise channels and shot sampling, a stabilizer simulator, a 12–14-qubit cap, a custom unitary, and a Fock-space mode. [app/docs/expansion/02-foundations.md:267-274; app/docs/expansion/03-error-correction.md:325-332]
+None of these features exists today: there is no measurement op, MAX_QUBITS is 8, and the state is a pure statevector only. [app/crates/qcore/src/circuit.rs:14,94-119]
+12. Tests that cover each behaviour
+Test (all &quot;ok&quot;)
+Behaviour covered
+Evidence
+tests::ground_truth_matches_python_prototype
+Final distributions for Bell, Deutsch–Jozsa (n = 1, 2, 3; balanced/constant0/constant1) and all 4 Grover marks
+app/crates/qcore/src/lib.rs:568-578
+tests::traces_are_normalised_and_consistent
+Norm 1 at every step, vector length, valid column indices
+app/crates/qcore/src/lib.rs:580-598
+tests::kets_read_naturally
+Ket strings for Bell, Grover, Deutsch–Jozsa constant1
+app/crates/qcore/src/lib.rs:600-610
+tests::verifier_matches_python_prototype
+Pass/fail cases, Deutsch–Jozsa key length, unparseable values in Python repr, &quot;1/2&quot; and &quot;50%&quot;, ket-style keys, empty claim
+app/crates/qcore/src/lib.rs:612-641
+tests::norm_params_matches_python_prototype
+Grover marked normalisation and default, Deutsch–Jozsa string n, &quot;constant&quot;, clamp of n = 9, unsupported algorithm
+app/crates/qcore/src/lib.rs:643-653
+circuit::tests::angles_parse
+pi forms, π symbol, decimals, rejection of pi/0 and junk
+app/crates/qcore/src/circuit.rs:378-386
+circuit::tests::bell_matches_real_simulator
+General simulator agrees with Bell; complex ket
+app/crates/qcore/src/circuit.rs:388-395
+circuit::tests::phases_and_identities
+S, Z, H, RY identities; i phases in kets
+app/crates/qcore/src/circuit.rs:397-417
+circuit::tests::controls_swap_and_toffoli
+CCX, SWAP, control errors, range errors
+app/crates/qcore/src/circuit.rs:419-430
+circuit::tests::teleportation_by_deferred_measurement
+3-qubit teleportation marginal; norm preserved
+app/crates/qcore/src/circuit.rs:432-456
+topic::tests::atlas_content_passes_the_gate
+The real content files pass the gate
+app/crates/qcore/src/topic.rs:190-216
+topic::tests::gate_catches_a_wrong_claim_and_a_dead_link
+Gate reports a wrong outcome and a dead link
+app/crates/qcore/src/topic.rs:218-234
+All 12 appear as &quot;ok&quot; with &quot;result: ok. 12 passed; 0 failed; 0 ignored&quot; (docs/native-app/build/test_names.txt:28-40). A third result line reports 0 tests; the file does not name its crate (docs/native-app/build/test_names.txt:41).
+These behaviours have no test: NaN, infinity or out-of-range claims; a sum check for Bell or Grover; a numeric Grover &quot;marked&quot;; theta on non-parametric gates; duplicate targets; NaN angles. [docs/native-app/build/test_names.txt:1-41]
+No test is listed for the UI crate (Lab, Atlas, viz, Compare). [docs/native-app/build/test_names.txt:1-41]
+13. Observation outside this area
+In the Lab screenshot the top navigation highlights &quot;Atlas&quot;, not &quot;Lab&quot;. The cause was not investigated; it may be an artefact of the preview-mode capture. [docs/native-app/figures/06-lab-start.png]
+14. Unknown / not measured
+Simulator speed, e.g. time per step at 8 qubits or the cost of re-running a circuit block on scroll: not measured. [no measurement found]
+Whether a real model (P3 claim extractor) ever emits &quot;NaN&quot;, &quot;inf&quot; or out-of-range values. The gaps are shown only with constructed inputs (code reading and the prior probe): not measured. [app/crates/desktop/src/pipeline.rs:98-102]
+Outputs of the prior simulator-physics probes (teleportation without CZ, NaN angles, duplicate targets, n = 4 clamp): source files seen, result files not found. The statements above rest on code reading. [scratchpad attack/verify-simulator-physics-*/probe/src/main.rs]
+Whether serde_json rejects an out-of-range number such as 1e999 in a claim or an angle. serde_json has a NumberOutOfRange error, but the path was not traced: unknown. [serde_json-1.0.154 src/error.rs:280]
+Whether the Compare &quot;both rows not matching&quot; case for Deutsch–Jozsa balanced appears on screen: derived from code, not observed. [app/crates/ui/src/viz.rs:201-222]
+Full Python-versus-Rust parity of every verifier message (order, float formatting): not exhaustively compared. [app/crates/qcore/src/lib.rs:551-556; code/quantum_sim.py:125-128]
+The float grammar was read from the Rust 1.99.0 std source. The app uses 1.100.0, and the grammar there was assumed unchanged, not read. [lead-measured toolchain; Rust std float_parse.rs:27-40]
+Accuracy of the expansion notes&apos; numbers and external sources: not re-checked. [app/docs/expansion/02-foundations.md; app/docs/expansion/03-error-correction.md]
+Learning outcomes or user studies for the Lab or the Atlas: none found in the files read. [files listed in this document]
+Any schedule for building the 37 remaining master-list topics: not stated in any file read. [app/docs/atlas-spec.md; app/docs/expansion/02-foundations.md; app/docs/expansion/03-error-correction.md]
+Word counts are my whitespace-split counts over all prose fields, not an official metric. [script, 25 Nov 2026]

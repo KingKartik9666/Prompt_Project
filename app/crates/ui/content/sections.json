@@ -1,0 +1,8 @@
+[
+  { "id": "foundations", "title": "Foundations", "blurb": "What a qubit is, what measuring it does, and why phase matters." },
+  { "id": "many-qubits", "title": "Many qubits", "blurb": "How qubits combine, what entanglement is, and what you cannot copy." },
+  { "id": "gates", "title": "Gates and circuits", "blurb": "The operations a quantum computer applies, and how circuits are drawn and read." },
+  { "id": "protocols", "title": "Protocols", "blurb": "Short procedures that use entanglement to move or protect information." },
+  { "id": "algorithms", "title": "Algorithms", "blurb": "Where quantum computers beat classical ones, and exactly how." },
+  { "id": "machines", "title": "Real machines", "blurb": "Noise, error correction, hardware, and what quantum computers can and cannot do." }
+]

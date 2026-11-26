@@ -1,0 +1,786 @@
+FACT FILE: ARCHITECTURE
+Architecture, stack, build and packaging
+Quantum Explainer native Windows app (k:/Prompt/app): verified facts with evidence
+Project
+S18 / SIH26140: Quantum Explainer, native Windows rebuild of the Milestone 2 prototype
+Area
+Architecture, technology stack, build and packaging
+Code state
+Working tree of k:/Prompt/app on 25 Nov 2026 (files staged in git, not committed)
+Evidence
+Every fact ends with its source in square brackets: a repository path and line, a lead measurement, supplied context, the local cargo registry, a disk listing or the git index
+Team
+Kartik Negi (S24CSEU1982, leader), Divey Grover (S24CSEU1989), Twinkle Sahu (S24CSEU0090); faculty Sonal Kukreja; batch 76
+Prepared
+25 Nov 2026
+Contents
+How to read this fact file
+Architecture at a glance
+Workspace layout
+Module responsibilities
+Dependencies: declared and resolved
+Release profile and toolchain
+How the UI is built
+Embedding and the app:// protocol
+Native window
+WebView configuration and handlers
+IPC: UI to host
+IPC: host to UI
+Threading model
+LLM provider layer and HTTP stack
+Key storage and settings (architecture view)
+Packaging and distribution
+Tests that touch the architecture
+Dated runtime evidence
+Technology table
+Earlier claims checked against today&apos;s code
+README versus code
+Unknown / not measured
+How to read this fact file
+This file records verified facts about the architecture, technology stack, build and packaging of the Quantum Explainer native Windows app in k:\Prompt\app, as the working tree stood on 25 Nov 2026. Code was read directly; the app README was treated as possibly stale. Nothing under app, code or prompts was edited, built or run for this file.
+Evidence tags: [app/...:N] is a file and line in the repository (paths relative to k:\Prompt). [lead-measured] is a figure measured by the project lead on 25 Nov 2026. [context: ...] is a fact supplied by the lead from earlier sessions. [registry ...] is dependency source code in the local cargo registry (index.crates.io-1949cf8c6b5b557f). [disk, 25 Nov] is a file listing taken during this fact pass. [git index, 25 Nov] is git diff --cached output taken during this fact pass.
+Statements marked &quot;inference&quot; follow from the cited code but were not observed at run time.
+Sizes: the lead&apos;s &quot;MB&quot; and &quot;KB&quot; figures match on-disk byte counts when read as MiB and KiB (1 MiB = 1,048,576 bytes).
+Architecture at a glance
+The app is one Windows GUI process. A frameless tao window hosts a WebView2 view through wry; the interface is Leptos compiled to WebAssembly, embedded in the exe and served over a private app:// protocol with &quot;no browser, no local web server, no open port&quot; (module comment) [app/crates/desktop/src/main.rs:1-5].
+API keys stay in the native process; the comment states &quot;API keys stay in this process&quot; [app/crates/desktop/src/main.rs:5]. Only the last four characters of a key are sent to the web view [app/crates/desktop/src/llm/mod.rs:244-248] [app/crates/desktop/src/main.rs:96, 108].
+All LLM network calls are made by the host with ureq, never by the page; the page&apos;s CSP limits connect-src to &apos;self&apos; [app/crates/desktop/src/main.rs:63].
+The simulator crate qcore is compiled twice: into the host (claim verification in the pipeline) and into the WebAssembly UI (Lab, Atlas, Tutor visuals) [app/crates/qcore/Cargo.toml:3] [app/Cargo.lock:806-817, 3936-3945].
++-- QuantumExplainer.exe  (crate desktop, one GUI process, no console) -----------
+|
+|  main thread: tao event loop (ControlFlow::Wait)
+|    tao Window: frameless, transparent, Mica, generated 64x64 icon
+|    wry WebView (WebView2): url app://localhost/  -&gt; https://app.localhost/
+|      custom protocol &quot;app&quot; -&gt; serve(): rust-embed Assets (crates/ui/dist) + CSP
+|      +-- page: index.html -&gt; boot.js -&gt; ui.js + ui_bg.wasm (crate ui, Leptos)
+|      |     screens Home / Atlas / Topic / Tutor / Lab, Settings popover
+|      |     qcore in wasm: Lab traces, Atlas circuits, Tutor visuals
+|      |
+|      |  UI -&gt; host: window.ipc.postMessage(JSON {cmd: ...})
+|      v
+|    handle_ipc(): hello, win, save_key, open_key_page, clear_key,
+|                  set_provider, list_models, ask
+|      | std::thread::spawn for save_key, list_models, ask
+|      v
+|  worker threads (detached, blocking I/O)
+|    pipeline::run  P1 router -&gt; P2 explainer -&gt; P3 claims + qcore::verify -&gt; P4
+|    llm::Client: Gemini / Anthropic / OpenAI-compatible (11 presets)
+|    ureq 3 + native-tls (SChannel)  == HTTPS ==&gt;  provider APIs
+|      | EventLoopProxy::send_event(UserEvent::Emit(json))
+|      v
+|  event loop: webview.evaluate_script(&quot;window.__qe &amp;&amp; window.__qe(&lt;JSON str&gt;)&quot;)
+|      host -&gt; UI events: status, key_error, models, models_error, stage, route,
+|      explanation, verification, repair, practice, notice, done, error
+|
+|  storage: Windows Credential Manager (keyring), env vars, .env file,
+|           %LOCALAPPDATA%\QuantumExplainer\settings.json + WebView2 profile
++----------------------------------------------------------------------------------
+Workspace layout
+The Cargo workspace has three members, crates/qcore, crates/ui and crates/desktop, with resolver = &quot;3&quot; [app/Cargo.toml:1-3].
+Shared package settings: version 0.1.0, edition 2024, rust-version &quot;1.100&quot;, license MIT, publish = false [app/Cargo.toml:5-10].
+Shared dependencies: qcore by path, serde 1.0.229 with derive, serde_json 1.0.154 with preserve_order [app/Cargo.toml:12-15].
+Cargo.lock uses lock-file format version 4 [app/Cargo.lock:3] and lists 461 packages [disk, 25 Nov: grep count of [[package]]].
+Source sizes (lines): desktop main.rs 429, pipeline.rs 148, prompts.rs 245, gemini.rs 209, config.rs 282, llm/mod.rs 550, llm/anthropic.rs 284, llm/openai.rs 193; qcore lib.rs 654, circuit.rs 457, topic.rs 235; ui atlas.rs 761, home.rs 440, tutor.rs 388, main.rs 346, state.rs 245, viz.rs 235, lab.rs 195, glow.rs 120, bridge.rs 66 [disk, 25 Nov: wc -l].
+Crate
+Output
+Responsibility
+Evidence
+qcore
+library
+Statevector simulator, step traces and claim verifier shared by host and UI; Atlas content model and content gate
+[app/crates/qcore/Cargo.toml:3] [app/crates/qcore/src/lib.rs:1-8] [app/crates/qcore/src/topic.rs:1-5]
+desktop
+binary QuantumExplainer (src/main.rs)
+Native window (tao + wry/WebView2), multi-provider LLM pipeline and asset server
+[app/crates/desktop/Cargo.toml:3, 10-12]
+ui
+binary compiled to wasm32-unknown-unknown, post-processed by wasm-bindgen
+Leptos client-side interface rendered inside WebView2
+[app/crates/ui/Cargo.toml:3] [app/build.ps1:23, 28]
+Folder or file
+Content
+Evidence
+app/crates/ui/content
+sections.json plus three topic files: entanglement, superposition, teleportation
+[disk, 25 Nov]
+app/crates/ui/assets/fonts
+LibreFranklin-normal, Oswald-latin, SourceSerif4-normal, SourceSerif4-italic (woff2)
+[disk, 25 Nov]
+app/crates/ui/dist
+build output: index.html, boot.js, app.css, ui.js, ui_bg.wasm, fonts
+[app/build.ps1:25-31] [disk, 25 Nov]
+app/.tools/bin
+wasm-bindgen-cli 0.2.130 (wasm-bindgen.exe, wasm-bindgen-test-runner.exe, wasm2es6js.exe)
+[app/.tools/.crates.toml:2-6]
+app/docs
+atlas-spec.md, expansion/02-foundations.md, expansion/03-error-correction.md
+[disk, 25 Nov]
+app/.gitignore
+ignores target/, .tools/, crates/ui/dist/, .taste-skill/, .env
+[app/.gitignore:1-5]
+_backup/app-2026-11-25
+earlier snapshot of the app without llm/, atlas.rs, circuit.rs or topic.rs
+[git index, 25 Nov]
+Module responsibilities
+qcore/lib.rs: a statevector simulator for the three verifiable circuits (Bell, Deutsch-Jozsa, Grover-2) with real amplitudes in f64, step traces, and the claim verifier ported from code/quantum_sim.py [app/crates/qcore/src/lib.rs:1-8, 49-53].
+qcore/circuit.rs: a general n-qubit statevector simulator with complex amplitudes, used by Atlas pages; MAX_QUBITS = 8 [app/crates/qcore/src/circuit.rs:1-9, 14].
+qcore/topic.rs: the Atlas content model and the check gate; the test atlas_content_passes_the_gate reads crates/ui/content and fails on any parse error, wrong outcome or dead link [app/crates/qcore/src/topic.rs:1-5, 186-215].
+desktop/main.rs: window, WebView, app:// asset server, IPC dispatch and event loop [app/crates/desktop/src/main.rs:144-279, 330-410].
+desktop/pipeline.rs: P1 router, P2 explainer, P3 claim extractor with simulator check and one repair retry, P4 practice; the comment says it has the same control flow as run() in code/workflow.py [app/crates/desktop/src/pipeline.rs:1-2].
+desktop/prompts.rs: embeds the four prompt files from prompts/final at compile time with include_str! [app/crates/desktop/src/prompts.rs:24-31]; the comment says the prompt text is &quot;byte-for-byte&quot; what the Python prototype sends [app/crates/desktop/src/prompts.rs:4-5].
+desktop/llm/mod.rs: provider abstraction over three wire formats (Gemini native, Anthropic Messages, OpenAI-compatible chat/completions), the preset table, the shared HTTP agent and the retry loop [app/crates/desktop/src/llm/mod.rs:1-6, 17-23, 261-268, 314-375].
+desktop/gemini.rs, llm/anthropic.rs, llm/openai.rs: one client per wire format [app/crates/desktop/src/gemini.rs:1-3] [app/crates/desktop/src/llm/anthropic.rs:1] [app/crates/desktop/src/llm/openai.rs:1-2].
+desktop/config.rs: key lookup (Credential Manager, environment variable, .env), settings.json for the active provider and chosen models, and the per-user data folder [app/crates/desktop/src/config.rs:1-10, 40-43].
+ui/main.rs: mounts the Leptos app, sends hello, renders the title bar, screen switcher and the Settings popover with the key form [app/crates/ui/src/main.rs:17-20, 34-37, 66-85, 159-167].
+ui/state.rs: app-wide signals and the handler that applies every host event [app/crates/ui/src/state.rs:83-93, 104-217].
+ui/bridge.rs: window.ipc to window.__qe bridge, reduced-motion check and same-document View Transitions [app/crates/ui/src/bridge.rs:1, 8-9, 22-32, 49-66].
+ui/atlas.rs, home.rs, tutor.rs, lab.rs, viz.rs, glow.rs: Atlas map and topic pages; scroll-scrubbed Home; Tutor; offline Lab; circle-notation visuals; cursor-following background light [app/crates/ui/src/atlas.rs:1-4] [app/crates/ui/src/home.rs:1-7] [app/crates/ui/src/tutor.rs:1] [app/crates/ui/src/lab.rs:1-2] [app/crates/ui/src/viz.rs:1] [app/crates/ui/src/glow.rs:1-6].
+Dependencies: declared and resolved
+Declared versions are from each crate&apos;s Cargo.toml; resolved versions are from app/Cargo.lock. Cargo.lock covers every target platform (for example gtk, webkit2gtk, objc2, openssl and security-framework appear because wry, tao and native-tls list them for Linux and macOS), so a crate listed there is not necessarily compiled on Windows [app/Cargo.lock:2518-2519, 3177-3178, 4548-4584].
+Crate
+Declared
+Resolved
+Used by
+Evidence
+wry
+&quot;0.57.3&quot;
+0.57.3
+desktop
+[app/crates/desktop/Cargo.toml:18] [app/Cargo.lock:4544-4545]
+tao
+&quot;0.37.3&quot;
+0.37.3
+desktop
+[app/crates/desktop/Cargo.toml:20] [app/Cargo.lock:3593-3594]
+window-vibrancy
+&quot;0.8.1&quot;
+0.8.1
+desktop
+[app/crates/desktop/Cargo.toml:21] [app/Cargo.lock:4297-4298]
+ureq
+&quot;3.5.2&quot;, default-features off, features native-tls-no-default, json
+3.5.2
+desktop
+[app/crates/desktop/Cargo.toml:22] [app/Cargo.lock:3972-3973]
+ureq-proto
+transitive (ureq)
+0.7.1
+desktop
+[app/Cargo.lock:3986, 3991-3992]
+native-tls
+transitive (ureq feature)
+0.2.18
+desktop
+[app/Cargo.lock:3981, 2148-2149]
+schannel
+transitive (native-tls)
+0.1.30
+desktop
+[app/Cargo.lock:2158, 3143-3144]
+rust-embed
+&quot;8.14.0&quot;
+8.14.0 (rust-embed-impl and rust-embed-utils also 8.14.0)
+desktop
+[app/crates/desktop/Cargo.toml:23] [app/Cargo.lock:3056-3057, 3067-3068, 3081-3082]
+keyring
+&quot;4.2.0&quot;
+4.2.0, with keyring-core 1.1.0 and windows-native-keyring-store 1.1.0
+desktop
+[app/crates/desktop/Cargo.toml:24] [app/Cargo.lock:1861-1870, 1873-1874, 4386-4387]
+windows-sys
+&quot;0.61.2&quot;, features Win32_UI_WindowsAndMessaging, Win32_UI_Shell, Win32_Foundation
+0.61.2 (a second copy, 0.45.0, is pulled in by jni 0.21.1)
+desktop
+[app/crates/desktop/Cargo.toml:25] [app/Cargo.lock:4427-4428, 4436-4437, 1818]
+webview2-com
+transitive (wry)
+0.39.1 (webview2-com-sys 0.39.1)
+desktop
+[app/Cargo.lock:4579, 4232-4233, 4255-4256]
+windows
+transitive (wry, tao)
+0.62.2
+desktop
+[app/Cargo.lock:4313-4314]
+http
+transitive (wry)
+1.5.0
+desktop
+[app/Cargo.lock:4559, 1600-1601]
+leptos
+&quot;0.8.23&quot;, feature csr
+0.8.23 (leptos_dom 0.8.8, reactive_graph 0.2.16, tachys 0.2.19)
+ui
+[app/crates/ui/Cargo.toml:14] [app/Cargo.lock:1897-1898, 1950-1951, 2941-2942, 3561-3562]
+wasm-bindgen
+&quot;=0.2.130&quot; (exact pin)
+0.2.130
+ui
+[app/crates/ui/Cargo.toml:15] [app/Cargo.lock:4076-4077]
+js-sys
+&quot;0.3.107&quot;
+0.3.107
+ui
+[app/crates/ui/Cargo.toml:16] [app/Cargo.lock:1850-1851]
+web-sys
+&quot;0.3.107&quot;, 12 features
+0.3.107
+ui
+[app/crates/ui/Cargo.toml:17] [app/Cargo.lock:4166-4167]
+console_error_panic_hook
+&quot;0.1.7&quot;
+0.1.7
+ui
+[app/crates/ui/Cargo.toml:18] [app/Cargo.lock:510-511]
+serde
+&quot;1.0.229&quot;, derive
+1.0.229
+all three
+[app/Cargo.toml:14] [app/Cargo.lock:3232-3233]
+serde_json
+&quot;1.0.154&quot;, preserve_order
+1.0.154
+all three
+[app/Cargo.toml:15] [app/Cargo.lock:3262-3263]
+The web-sys features enabled are Window, Document, Element, EventTarget, HtmlElement, KeyboardEvent, MouseEvent, MediaQueryList, DomRect, NodeList, PointerEvent and CssStyleDeclaration [app/crates/ui/Cargo.toml:17].
+The wasm-bindgen crate is pinned with = because it &quot;must equal the wasm-bindgen CLI version in .tools&quot; [app/crates/ui/Cargo.toml:15]; the installed CLI is wasm-bindgen-cli 0.2.130 [app/.tools/.crates.toml:2].
+tao is held at 0.37 on purpose: &quot;0.38 is newer but its Linux gtk dependency clashes with wry 0.57&apos;s; 0.37 is the newest tao wry builds with&quot; [app/crates/desktop/Cargo.toml:19].
+The desktop crate&apos;s resolved direct dependencies are exactly keyring, qcore, rust-embed, serde, serde_json, tao, ureq, window-vibrancy, windows-sys 0.61.2 and wry [app/Cargo.lock:804-817]. It declares no async runtime. tokio 1.54.1 appears in the lock only as a dependency of wasm-bindgen-futures 0.4.80 [app/Cargo.lock:4088-4096, 3761-3762]; whether it is compiled into any artifact was not established.
+Release profile and toolchain
+Setting
+Value
+Evidence
+opt-level (all crates)
+3
+[app/Cargo.toml:18]
+lto
+&quot;fat&quot;
+[app/Cargo.toml:19]
+codegen-units
+1
+[app/Cargo.toml:20]
+panic
+&quot;abort&quot;
+[app/Cargo.toml:21]
+strip
+true
+[app/Cargo.toml:22]
+opt-level for package ui
+&quot;z&quot; (comment: &quot;The UI is shipped as WebAssembly: optimise it for size.&quot;)
+[app/Cargo.toml:24-26]
+Rust 1.100.0 on toolchain stable-x86_64-pc-windows-gnullvm with LLVM-MinGW (winget MartinStorsjo.LLVM-MinGW.MSVCRT 23.1.6-20261117), chosen because the PC has no MSVC Build Tools and the plain -gnu toolchain failed (missing dlltool/libgcc) [context: toolchain facts] [lead-measured].
+build.ps1 finds LLVM-MinGW under %LOCALAPPDATA%\Microsoft\WinGet\Packages and puts its bin folder on PATH, then adds %USERPROFILE%\.cargo\bin and app\.tools\bin [app/build.ps1:10-13].
+Every cargo call uses +stable-x86_64-pc-windows-gnullvm [app/build.ps1:14, 23, 34]. No rust-toolchain file exists in app [disk, 25 Nov].
+The workspace requires rust-version &quot;1.100&quot; [app/Cargo.toml:8].
+No wasm-opt step exists in build.ps1 or the manifests [disk, 25 Nov: grep for wasm-opt found no match]. WebAssembly size optimisation relies on opt-level = &quot;z&quot;, fat LTO and strip [app/Cargo.toml:17-26].
+How the UI is built
+build.ps1 takes two switches: -Dev (debug build, WebView devtools enabled) and -Run (start the exe after building) [app/build.ps1:1-5]. It detects failures through $LASTEXITCODE, because in Windows PowerShell 5.1 the &quot;Stop&quot; preference would turn cargo&apos;s stderr progress into errors [app/build.ps1:6-8].
+cargo +stable-x86_64-pc-windows-gnullvm build -p ui --target wasm32-unknown-unknown, adding --release unless -Dev is given [app/build.ps1:17-18, 23].
+Delete and recreate crates\ui\dist and dist\fonts [app/build.ps1:25-27].
+wasm-bindgen --target web --no-typescript --out-dir dist --out-name ui target\wasm32-unknown-unknown\&lt;profile&gt;\ui.wasm, which writes ui.js and ui_bg.wasm [app/build.ps1:28] [disk, 25 Nov].
+Copy index.html, boot.js and styles\app.css into dist, and every assets\fonts\*.woff2 into dist\fonts [app/build.ps1:30-31].
+cargo +stable-x86_64-pc-windows-gnullvm build -p desktop, plus --release unless -Dev, which embeds dist into the exe [app/build.ps1:33-35].
+Print the exe path and size in MB, and start the exe if -Run was given [app/build.ps1:36-38].
+ui/build.rs generates OUT_DIR/content.rs, which holds include_str! of content/sections.json and every content/topics JSON file in sorted order, with rerun-if-changed for each [app/crates/ui/build.rs:1-23]. atlas.rs includes it [app/crates/ui/src/atlas.rs:15-17] and parses it once in a OnceLock. A file that fails to parse is skipped at run time; the qcore gate test catches it at test time [app/crates/ui/src/atlas.rs:24-31].
+desktop/build.rs creates ../ui/dist if it is missing, so cargo test -p desktop compiles on a fresh clone, and sets rerun-if-changed on that folder [app/crates/desktop/build.rs:1-9].
+Inference: an exe built while dist is empty answers 404 for every path, including index.html [app/crates/desktop/src/main.rs:56-67].
+Page boot chain: index.html preloads two fonts, links app.css and loads boot.js as a module [app/crates/ui/index.html:8-11]. boot.js imports init from ./ui.js and awaits it [app/crates/ui/boot.js:1-3]. The wasm main installs console_error_panic_hook and mounts the App to body [app/crates/ui/src/main.rs:17-20].
+dist file (25 Nov)
+Bytes on disk
+Lead figure
+Evidence
+ui_bg.wasm
+3,993,860 (3,900 KiB)
+3900 KB
+[disk, 25 Nov] [lead-measured]
+ui.js
+43,703 (42.7 KiB)
+43 KB
+[disk, 25 Nov] [lead-measured]
+app.css
+47,439 (46.3 KiB), identical to styles/app.css
+46 KB
+[disk, 25 Nov: cmp] [lead-measured]
+index.html / boot.js
+573 / 104
+not stated
+[disk, 25 Nov]
+fonts (4 woff2)
+29,292 + 28,488 + 130,188 + 122,360
+not stated
+[disk, 25 Nov]
+Embedding and the app:// protocol
+#[derive(Embed)] #[folder = &quot;../ui/dist/&quot;] struct Assets is the embedded file set [app/crates/desktop/src/main.rs:26-28].
+rust-embed embeds files only when debug_assertions is off. In a debug build, the generated code reads the folder from disk at run time [registry rust-embed-impl-8.14.0/src/lib.rs:50-56, 258-272]. The desktop crate does not enable the debug-embed feature [app/crates/desktop/Cargo.toml:23]. So the release exe is self-contained, while a -Dev exe still needs crates/ui/dist on disk (inference from these two facts).
+serve() strips the leading &quot;/&quot; from the request path and maps an empty path to index.html. It returns the embedded file with a Content-Type from a fixed extension table, Cache-Control: no-cache and the CSP header. Unknown paths get status 404 with the body &quot;not found&quot; [app/crates/desktop/src/main.rs:53-69].
+The 404 response carries no CSP or Content-Type header [app/crates/desktop/src/main.rs:67].
+MIME table: html &quot;text/html; charset=utf-8&quot;, js &quot;text/javascript; charset=utf-8&quot;, wasm &quot;application/wasm&quot;, css &quot;text/css; charset=utf-8&quot;, svg &quot;image/svg+xml&quot;, woff2 &quot;font/woff2&quot;, png &quot;image/png&quot;, json &quot;application/json&quot;, anything else &quot;application/octet-stream&quot; [app/crates/desktop/src/main.rs:39-51].
+The Content-Security-Policy header, quoted exactly from the code [app/crates/desktop/src/main.rs:61-64]:
+default-src &apos;self&apos;; script-src &apos;self&apos; &apos;wasm-unsafe-eval&apos; &apos;unsafe-inline&apos;; style-src &apos;self&apos; &apos;unsafe-inline&apos;; font-src &apos;self&apos;; img-src &apos;self&apos; data:; connect-src &apos;self&apos;
+Directive
+Value
+Note
+default-src
+&apos;self&apos;
+the code comment calls the policy &quot;Strict CSP: only our own embedded files; wasm needs &apos;wasm-unsafe-eval&apos;.&quot; [app/crates/desktop/src/main.rs:60]
+script-src
+&apos;self&apos; &apos;wasm-unsafe-eval&apos; &apos;unsafe-inline&apos;
+&apos;unsafe-inline&apos; is allowed for scripts [app/crates/desktop/src/main.rs:63]
+style-src
+&apos;self&apos; &apos;unsafe-inline&apos;
+[app/crates/desktop/src/main.rs:63]
+font-src
+&apos;self&apos;
+fonts come from dist/fonts [app/build.ps1:31]
+img-src
+&apos;self&apos; data:
+[app/crates/desktop/src/main.rs:63]
+connect-src
+&apos;self&apos;
+the page cannot reach provider APIs itself; the host makes all LLM calls [app/crates/desktop/src/main.rs:63, 252-276]
+Native window
+#![windows_subsystem = &quot;windows&quot;] is unconditional (&quot;a GUI app: never open a console window&quot;), so debug builds also have no console [app/crates/desktop/src/main.rs:7].
+A panic hook shows a native MessageBoxW (&quot;Something went wrong and the app has to close.&quot;) and then calls process::exit(1) [app/crates/desktop/src/main.rs:304-314, 322]. The release profile uses panic = &quot;abort&quot; [app/Cargo.toml:21].
+If window or WebView creation fails, the same message box reads &quot;The window could not start.&quot; with the error and a note that the app needs the Microsoft Edge WebView2 Runtime (&quot;included with Windows 11&quot;) [app/crates/desktop/src/main.rs:323-326].
+The event loop is EventLoopBuilder::&lt;UserEvent&gt;::with_user_event(). The user events are Emit(JSON), Minimize, ToggleMaximize, Drag and Close [app/crates/desktop/src/main.rs:30-37, 331].
+The four prompts are parsed once at startup and shared through Arc&lt;Prompts&gt; [app/crates/desktop/src/main.rs:333, 269].
+Size: the window starts at 1360 x 860 logical pixels, clamped to at most 90% of the primary monitor&apos;s logical size. The minimum inner size is min(w, 960) x min(h, 600) [app/crates/desktop/src/main.rs:335-345].
+The window is created with title &quot;Quantum Explainer&quot;, with_decorations(false) (frameless), with_transparent(true) and a window icon [app/crates/desktop/src/main.rs:342-348]. On Windows it also gets with_undecorated_shadow(true) [app/crates/desktop/src/main.rs:349-353].
+Icon: a 64 x 64 RGBA image generated in code, a lime ring (212, 255, 64) on graphite (18, 19, 24), so no image file is needed [app/crates/desktop/src/main.rs:281-302].
+Mica: window_vibrancy::apply_mica(&amp;window, Some(true)). The second argument is the dark flag [registry window-vibrancy-0.8.1/src/lib.rs:132-139]. Success is stored as a boolean [app/crates/desktop/src/main.rs:355-359] and exposed to the page by an initialization script that sets document.documentElement.dataset.mica [app/crates/desktop/src/main.rs:365].
+No CSS rule or UI code reads data-mica [disk, 25 Nov: grep for &quot;mica&quot; in crates/ui found no match]. .app paints an opaque var(--bg) = oklch(0.16 0.012 260) [app/crates/ui/styles/app.css:13, 67]. Whether Mica is visible anywhere is not measured.
+Custom title bar: the page draws its own Minimise, Maximise and Close buttons, only when a host is present. Mouse-down on a non-interactive part of the bar sends win/drag, and a double-click sends win/max [app/crates/ui/src/main.rs:88-107, 142-154].
+Window data folder: wry::WebContext::new(data_dir()), where data_dir is %LOCALAPPDATA%\QuantumExplainer (&quot;never next to the exe (Program Files is read-only)&quot;) [app/crates/desktop/src/main.rs:316-319, 362] [app/crates/desktop/src/config.rs:40-43]. That folder also holds settings.json [app/crates/desktop/src/config.rs:45-47].
+WebView configuration and handlers
+Builder call
+Value
+Evidence
+custom protocol
+&quot;app&quot;, handled by serve(req)
+[app/crates/desktop/src/main.rs:364]
+initialization script
+sets dataset.mica
+[app/crates/desktop/src/main.rs:365]
+navigation handler
+allow only URLs starting with https://app.localhost/ or app://localhost/
+[app/crates/desktop/src/main.rs:366-367]
+new-window handler
+always NewWindowResponse::Deny
+[app/crates/desktop/src/main.rs:368]
+drag-drop handler
+returns true (blocks the OS default)
+[app/crates/desktop/src/main.rs:369]
+with_https_scheme (Windows)
+true: custom protocol served as https://app.localhost (&quot;secure context (WebGPU etc.)&quot;)
+[app/crates/desktop/src/main.rs:374]
+theme (Windows)
+Theme::Dark
+[app/crates/desktop/src/main.rs:375]
+scroll bars (Windows)
+ScrollBarStyle::FluentOverlay
+[app/crates/desktop/src/main.rs:376]
+default context menus (Windows)
+debug builds only
+[app/crates/desktop/src/main.rs:377]
+start URL
+app://localhost/
+[app/crates/desktop/src/main.rs:380]
+transparent
+true
+[app/crates/desktop/src/main.rs:381]
+devtools
+debug builds only
+[app/crates/desktop/src/main.rs:382]
+IPC handler
+accepts a message only if the request host is app.localhost or the scheme is app
+[app/crates/desktop/src/main.rs:383-388]
+wry&apos;s documentation for the drag-drop handler says that on Windows &quot;This will disable the HTML Drag and Drop APIs like draggable=true&quot; and that the handler&apos;s return value is ignored there [registry wry-0.57.3/src/lib.rs:1189-1198].
+wry&apos;s with_https_scheme defaults to false; when true, custom protocols are served as https://&lt;scheme&gt;.localhost instead of http:// [registry wry-0.57.3/src/lib.rs:1966-1971].
+Browser accelerator keys (for example F5 and Ctrl+R reload) default to true in wry, &quot;WebView2&apos;s default behavior&quot; [registry wry-0.57.3/src/lib.rs:1770]. The app never calls with_browser_accelerator_keys [disk, 25 Nov: grep found no match].
+IPC: UI to host
+The UI calls window.ipc.postMessage(string), an extern bound in bridge.rs [app/crates/ui/src/bridge.rs:8-9, 18-20]. has_host() checks whether window.ipc exists; without it the UI runs in &quot;Preview mode&quot; [app/crates/ui/src/bridge.rs:13-16] [app/crates/ui/src/main.rs:249-250]. The host parses the body as JSON, ignores invalid JSON and dispatches on cmd; an unknown cmd is ignored [app/crates/desktop/src/main.rs:145, 149, 277].
+cmd
+Fields
+Sent from (UI)
+Host action
+Runs on
+Replies
+hello
+none
+App start, when a host is present [app/crates/ui/src/main.rs:35-37]
+builds the status event [app/crates/desktop/src/main.rs:150]
+IPC handler
+status
+win
+action: min, max, drag, close
+title bar buttons and drag area [app/crates/ui/src/main.rs:91, 101-105]
+posts Minimize, ToggleMaximize, Drag or Close to the event loop [app/crates/desktop/src/main.rs:151-160, 399-406]
+IPC handler, then event loop
+none
+save_key
+key, optional provider
+key form submit [app/crates/ui/src/main.rs:198]
+resolve provider, format check, live key check, store in Credential Manager, make active [app/crates/desktop/src/main.rs:161-191]
+spawned thread
+status with key_saved, or key_error
+open_key_page
+provider
+&quot;Get a key&quot; link [app/crates/ui/src/main.rs:325-330]
+ShellExecuteW opens the preset&apos;s fixed key page; Gemini if the id is unknown [app/crates/desktop/src/main.rs:71-81, 192-196]
+IPC handler
+none
+clear_key
+provider (else active)
+&quot;Remove&quot; button [app/crates/ui/src/main.rs:334]
+deletes the Credential Manager entry [app/crates/desktop/src/main.rs:197-214]
+IPC handler
+status (may carry settings_error)
+set_provider
+provider, optional model
+provider segment and model select [app/crates/ui/src/main.rs:225, 281]
+writes settings.json [app/crates/desktop/src/main.rs:215-232]
+IPC handler
+status (may carry settings_error)
+list_models
+provider
+&quot;Choose another&quot; link [app/crates/ui/src/main.rs:289]
+live model list from the provider [app/crates/desktop/src/main.rs:233-251]
+spawned thread
+models or models_error
+ask
+id, question, level
+Tutor &quot;Explain it&quot; through AppState::ask [app/crates/ui/src/tutor.rs:41] [app/crates/ui/src/state.rs:219-223]
+loads settings, then runs the P1 to P4 pipeline [app/crates/desktop/src/main.rs:252-276]
+settings on IPC handler; pipeline on spawned thread
+stage, route, explanation, verification, repair, practice, notice, done, error
+ask with no key replies at once with an error event: &quot;Add your {provider} API key in Settings first.&quot; [app/crates/desktop/src/main.rs:260-264]. An empty question gets no reply [app/crates/desktop/src/main.rs:265-267].
+level is &quot;intermediate&quot; only when sent as such; anything else becomes &quot;beginner&quot; [app/crates/desktop/src/main.rs:255-258].
+IPC: host to UI
+The host serialises every event to a JSON string, then encodes that string again as a JSON string literal. It calls webview.evaluate_script(&quot;window.__qe &amp;&amp; window.__qe(&lt;literal&gt;)&quot;) on the event loop, so no untrusted text is interpolated as code [app/crates/desktop/src/main.rs:394-398]. The UI installs window.__qe as a closure that parses the string and passes it to AppState::handle [app/crates/ui/src/bridge.rs:22-32] [app/crates/ui/src/main.rs:34].
+type
+Emitted by
+Meaning
+UI handling
+status
+status() [app/crates/desktop/src/main.rs:85-116]
+active provider, key presence, last-4 key hint, key source, model, list of all providers, app version
+replaces Status; reads key_saved; keeps the last model list [app/crates/ui/src/state.rs:106-139]
+key_error
+save_key [app/crates/desktop/src/main.rs:174, 188]
+key could not be routed, checked or saved; needs_provider asks the user to choose a provider
+shows the error, stops &quot;Checking&quot; [app/crates/ui/src/state.rs:150-157]
+models
+list_models [app/crates/desktop/src/main.rs:246]
+live model ids for a provider
+stored per provider [app/crates/ui/src/state.rs:140-149]
+models_error
+list_models [app/crates/desktop/src/main.rs:236, 247]
+model list could not be loaded
+stored as an error message [app/crates/ui/src/state.rs:140-149]
+stage
+pipeline [app/crates/desktop/src/pipeline.rs:29, 50, 70, 88, 95, 105, 120, 135]
+stage route, explain, verify or practice is active, done, skipped or error
+updates the 4-step progress [app/crates/ui/src/state.rs:26-31, 164-176]
+route
+pipeline [app/crates/desktop/src/pipeline.rs:46-49]
+P1 router JSON, normalised params, whether the simulator can check it, seconds, clean-JSON flag
+stores route and verifiable [app/crates/ui/src/state.rs:177-180]
+explanation
+pipeline [app/crates/desktop/src/pipeline.rs:87]
+P2 explanation for attempt 0 or 1
+replaces the explanation [app/crates/ui/src/state.rs:181]
+verification
+pipeline [app/crates/desktop/src/pipeline.rs:91, 104]
+qcore verdict (ok, truth, claimed, mismatches), or &quot;not checkable&quot;
+stores the verdict and rebuilds the trace [app/crates/ui/src/state.rs:190-194]
+repair
+pipeline [app/crates/desktop/src/pipeline.rs:114-116]
+the first check failed; mismatches are fed back for one retry
+stores the mismatch list [app/crates/ui/src/state.rs:182-189]
+practice
+pipeline [app/crates/desktop/src/pipeline.rs:134]
+P4 practice question JSON
+stored [app/crates/ui/src/state.rs:195]
+notice
+retry or fallback messages [app/crates/desktop/src/pipeline.rs:146-148] [app/crates/desktop/src/llm/mod.rs:332, 343, 365, 369]
+for example &quot;{model} busy (...); retrying in {w}s&quot;
+shown as a toast [app/crates/ui/src/state.rs:196]
+done
+pipeline end [app/crates/desktop/src/pipeline.rs:141]
+final message (or null), models used, total seconds
+ends the run [app/crates/ui/src/state.rs:197-203]
+error
+pipeline failure, or ask without a key [app/crates/desktop/src/pipeline.rs:142] [app/crates/desktop/src/main.rs:262]
+error message (key-scrubbed) and models used
+ends the run; marks active stages failed [app/crates/ui/src/state.rs:204-213]
+Run events carry the question id. The UI ignores events whose id differs from the current run (&quot;an older question still finishing&quot;) [app/crates/ui/src/state.rs:158-162]. The UI assigns ids by incrementing the previous one [app/crates/ui/src/state.rs:220].
+The settings_error field the host adds to status is never read by the UI [app/crates/desktop/src/main.rs:205, 210, 223, 228] [disk, 25 Nov: grep in crates/ui found no match]. The per-provider fields key_page and key_source are not read either [app/crates/ui/src/state.rs:34-42, 107-120].
+One ask produces at most six LLM calls: P1, then P2 and P3 on up to two attempts, then P4 [app/crates/desktop/src/pipeline.rs:30, 69, 83, 98, 132]. P3 runs only when the router&apos;s parameters are verifiable [app/crates/desktop/src/pipeline.rs:90-94].
+Threading model
+The main thread runs the tao event loop with ControlFlow::Wait. It owns the window and the WebView, and it applies Emit, Minimize, ToggleMaximize, Drag and Close events [app/crates/desktop/src/main.rs:391-409].
+handle_ipc runs synchronously in the wry IPC callback [app/crates/desktop/src/main.rs:383-388]. The comment on save_key (&quot;Check the key with its provider first (off the UI thread)&quot;) implies that the callback itself runs on the UI thread (inference) [app/crates/desktop/src/main.rs:162-163].
+These commands do their work inside the callback: hello, which reads settings.json, searches for a .env file and reads the Credential Manager entry for each of the 11 presets [app/crates/desktop/src/main.rs:85-104] [app/crates/desktop/src/config.rs:115-139]; clear_key; set_provider, which writes a file; open_key_page; win; and the settings load at the start of ask [app/crates/desktop/src/main.rs:259].
+save_key, list_models and ask each start a detached std::thread::spawn. No handle is kept, so a thread cannot be joined or cancelled [app/crates/desktop/src/main.rs:167, 240, 270].
+Worker threads send results back only through EventLoopProxy::send_event(UserEvent::Emit(..)) [app/crates/desktop/src/main.rs:147, 169, 249, 273].
+All HTTP is blocking ureq. Each client builds its own ureq::Agent with a global timeout [app/crates/desktop/src/llm/mod.rs:261-268]. Retry waits of 10, 30 and 60 s use std::thread::sleep on the worker thread [app/crates/desktop/src/llm/mod.rs:297, 333, 366].
+Shared state across threads: the read-only Arc&lt;Prompts&gt; [app/crates/desktop/src/main.rs:333, 269]; Gemini&apos;s process-wide set of dead models, a LazyLock&lt;Mutex&lt;HashSet&gt;&gt; [app/crates/desktop/src/gemini.rs:12-15]; settings.json, written through a fixed temporary file and a rename with no lock [app/crates/desktop/src/config.rs:57-66, 230-238].
+The host does not limit concurrent runs. The only guard is the UI: the Tutor submit button is disabled while run.running is true [app/crates/ui/src/tutor.rs:36-38, 90].
+HTTP use
+Timeout per attempt
+Evidence
+Gemini generateContent
+120 s
+[app/crates/desktop/src/gemini.rs:31]
+Anthropic Messages
+600 s
+[app/crates/desktop/src/llm/anthropic.rs:23, 118]
+OpenAI-compatible chat/completions
+600 s
+[app/crates/desktop/src/llm/openai.rs:13, 80]
+Key check: Gemini / Anthropic
+20 s
+[app/crates/desktop/src/gemini.rs:103] [app/crates/desktop/src/llm/anthropic.rs:169]
+Key check: OpenAI-compatible with a model list / Qwen (one real generation)
+30 s / 120 s
+[app/crates/desktop/src/llm/openai.rs:119, 122-125]
+Model lists (all kinds)
+30 s
+[app/crates/desktop/src/gemini.rs:115] [app/crates/desktop/src/llm/anthropic.rs:175] [app/crates/desktop/src/llm/openai.rs:139]
+Maximum response body read
+32 MiB
+[app/crates/desktop/src/llm/mod.rs:271]
+LLM provider layer and HTTP stack
+The shared agent uses TlsProvider::NativeTls with RootCerts::PlatformVerifier, described as &quot;the OS TLS stack (SChannel) with the OS certificate store&quot;. It also sets http_status_as_error(false), so error bodies can be read [app/crates/desktop/src/llm/mod.rs:259-268].
+The agent does not set max_redirects or https_only, so ureq&apos;s defaults apply: max_redirects 10 and https_only false [app/crates/desktop/src/llm/mod.rs:261-268] [registry ureq-3.5.2/src/config.rs:1069-1077].
+Presets are fixed at compile time. The web view can name a provider only by id, never supply a URL [app/crates/desktop/src/llm/mod.rs:25-26, 202-205]. A code comment says each base URL, key page and default model &quot;was checked against the provider&apos;s own documentation (fetched 2026-11-25)&quot; [app/crates/desktop/src/llm/mod.rs:5-6].
+Anthropic is called over raw HTTP because &quot;Rust has no official Anthropic SDK&quot; [app/crates/desktop/src/llm/anthropic.rs:1]. The client sends API version 2026-10-21, a max_tokens of 16000 and effort &quot;medium&quot; [app/crates/desktop/src/llm/anthropic.rs:16-21].
+id
+Kind
+Base URL
+Default model
+Model list
+Evidence
+gemini
+Gemini
+https://generativelanguage.googleapis.com/v1beta/models
+gemini-3.5-flash-lite (fallback chain default gemini-3.1-flash-lite)
+yes
+[app/crates/desktop/src/llm/mod.rs:50-59] [app/crates/desktop/src/gemini.rs:10] [app/crates/desktop/src/config.rs:18-19]
+anthropic
+Anthropic
+https://api.anthropic.com/v1
+claude-opus-5-5
+yes
+[app/crates/desktop/src/llm/mod.rs:62-71] [app/crates/desktop/src/llm/anthropic.rs:18]
+openai
+OpenAI-compatible
+https://api.openai.com/v1
+gpt-6.2-astra
+yes
+[app/crates/desktop/src/llm/mod.rs:76-85]
+deepseek
+OpenAI-compatible
+https://api.deepseek.com
+deepseek-flash
+yes
+[app/crates/desktop/src/llm/mod.rs:89-98]
+moonshot
+OpenAI-compatible
+https://api.moonshot.ai/v1
+kimi-k3.1-pro
+yes
+[app/crates/desktop/src/llm/mod.rs:103-112]
+qwen
+OpenAI-compatible
+https://dashscope-intl.aliyuncs.com/compatible-mode/v1
+qwen4-max
+no
+[app/crates/desktop/src/llm/mod.rs:120-129]
+xai
+OpenAI-compatible
+https://api.x.ai/v1
+grok-4.7
+yes
+[app/crates/desktop/src/llm/mod.rs:135-144]
+mistral
+OpenAI-compatible
+https://api.mistral.ai/v1
+mistral-small-latest
+yes
+[app/crates/desktop/src/llm/mod.rs:150-159]
+groq
+OpenAI-compatible
+https://api.groq.com/openai/v1
+llama-3.3-70b-versatile
+yes
+[app/crates/desktop/src/llm/mod.rs:163-172]
+together
+OpenAI-compatible
+https://api.together.ai/v1
+MiniMaxAI/MiniMax-M3.1-Flash
+yes
+[app/crates/desktop/src/llm/mod.rs:176-185]
+openrouter
+OpenAI-compatible
+https://openrouter.ai/api/v1
+openai/gpt-5.2
+yes
+[app/crates/desktop/src/llm/mod.rs:190-199]
+Key storage and settings (architecture view)
+Keys are stored in Windows Credential Manager under service &quot;QuantumExplainer&quot; and account &lt;provider&gt;_api_key, so Gemini&apos;s account is gemini_api_key [app/crates/desktop/src/config.rs:4-5, 17, 100-102].
+Key lookup order: Credential Manager, then the provider&apos;s process environment variable, then a .env file [app/crates/desktop/src/config.rs:128-139]. The .env search walks every ancestor of the exe&apos;s folder, then every ancestor of the current directory, and the first .env found wins [app/crates/desktop/src/config.rs:68-86].
+settings.json at %LOCALAPPDATA%\QuantumExplainer holds only provider and models; it has no field for a key [app/crates/desktop/src/config.rs:9-10, 21-29].
+A model id chosen in the UI must be 1 to 200 characters from the set of ASCII letters, digits and ._-/:~@+, and must not contain &quot;..&quot; [app/crates/desktop/src/config.rs:201-208].
+Error text and notices are passed through scrub() before they reach the UI. It replaces the key with &quot;…&quot; plus its last four characters [app/crates/desktop/src/llm/mod.rs:250-257, 411-426].
+Packaging and distribution
+The output is a single exe, QuantumExplainer.exe, at 6.8 MB. It embeds the UI, and the release build took 94 s [lead-measured]. On disk the file is 7,111,680 bytes (6.78 MiB), timestamped 25 Nov 18:37 [disk, 25 Nov].
+An older debug exe, target\debug\QuantumExplainer.exe, is 89,993,216 bytes, timestamped 24 Nov 22:59 [disk, 25 Nov]. That build may be stale.
+Runtime prerequisite: the Microsoft Edge WebView2 Runtime [app/crates/desktop/src/main.rs:325]. The lead&apos;s PC has WebView2 runtime 158 (Chromium 158) [context: toolchain facts].
+At run time the app writes only to %LOCALAPPDATA%\QuantumExplainer (settings.json and the WebView2 profile) and to Windows Credential Manager [app/crates/desktop/src/config.rs:40-66, 210-217] [app/crates/desktop/src/main.rs:362].
+No installer, MSIX, code signing or Windows resource step was found. A grep for signtool, msix, wix, nsis, inno, winres and manifest across app/crates, build.ps1, Cargo.toml, README.md and app/docs matched only unrelated words (&quot;consistent&quot; in qcore, and the topic file entanglement.json) [disk, 25 Nov].
+The window icon is generated at run time [app/crates/desktop/src/main.rs:281-302]. No build-time icon or version resource was found [disk, 25 Nov].
+Docker packaging in the repository covers the Python prototype, not the native app [context: git log c7a8cfb &quot;Add Docker packaging so the prototype runs on any PC&quot;] [k:\Prompt\Dockerfile exists, disk, 25 Nov].
+Repository state: 5,966 files under app/target-attack-* and 2,070 under app/target-llm are staged in the git index. These are cargo target directories left by other sessions, and app/.gitignore lists only target/ [git index, 25 Nov] [app/.gitignore:1]. They were not modified for this fact file.
+Tests that touch the architecture
+cargo test -p qcore -p desktop gave 36 passed, 0 failed, 2 ignored. The 2 ignored tests are live network tests [lead-measured] [docs/native-app/build/test_names.txt:1-2, 27, 40].
+desktop: 24 passed, 2 ignored. These include tests::save_key_provider_resolution (IPC key routing), prompts::tests::embedded_prompts_parse (the compile-time prompt embedding), config::tests::stored_settings_hold_no_key and llm::tests::keys_never_leak_into_messages [docs/native-app/build/test_names.txt:1-27].
+qcore: 12 passed, including topic::tests::atlas_content_passes_the_gate, which checks the content that ui/build.rs embeds [docs/native-app/build/test_names.txt:28-40].
+A third result line reports 0 tests; which target it belongs to was not recorded [docs/native-app/build/test_names.txt:41]. The ui crate defines no tests [disk, 25 Nov: grep for #[test] in crates/ui/src found no match].
+Dated runtime evidence
+24 Nov 2026, dev build of the same app, gemini-3.5-flash-lite: a Bell-state question ran end to end with the verdict &quot;Verified by the simulator&quot; and the footer &quot;Answered by gemini-3.5-flash-lite (4) in 16.6 s&quot; [context: 24 Nov live run].
+A fake key was rejected with &quot;Google rejected this key: API key not valid&quot;. This matches the format string in today&apos;s code [context: 24 Nov live run] [app/crates/desktop/src/gemini.rs:105].
+Gemini sometimes returned HTTP 503 &quot;high demand&quot;, and the app retried with a visible notice. Today&apos;s code still treats 503 as transient and emits &quot;busy ... retrying&quot; notices [context: 24 Nov live run] [app/crates/desktop/src/llm/mod.rs:355-367].
+The screenshot docs/native-app/figures/10-tutor-live-run-24nov.png comes from that 24 Nov dev build, which had older bar-chart visuals [context: screenshots].
+Today&apos;s release build was not run for this fact file.
+Technology table
+Technology
+Version
+Role
+Why chosen (only if stated)
+Rust, edition 2024
+1.100.0 (rust-version &quot;1.100&quot;)
+all three crates
+User priority: newest stable tech in every category [context: user priorities] [lead-measured] [app/Cargo.toml:7-8]
+Toolchain stable-x86_64-pc-windows-gnullvm + LLVM-MinGW
+LLVM-MinGW 23.1.6-20261117
+native and wasm builds
+No MSVC Build Tools on the PC; plain -gnu failed (missing dlltool/libgcc) [context: toolchain facts]
+tao
+0.37.3
+native window and event loop
+0.38 clashes with wry 0.57 on Linux gtk; 0.37 is the newest tao wry builds with [app/crates/desktop/Cargo.toml:19]
+wry
+0.57.3
+WebView host, custom protocol, IPC
+&quot;no browser, no local web server, no open port&quot; [app/crates/desktop/src/main.rs:4-5]
+WebView2 runtime
+158 (Chromium 158) on the lead&apos;s PC
+renders the UI
+&quot;included with Windows 11&quot; [app/crates/desktop/src/main.rs:325] [context: toolchain facts]
+window-vibrancy
+0.8.1
+Mica backdrop
+Windows 11 Mica &quot;behind the transparent title bar&quot; [app/crates/desktop/src/main.rs:355]
+rust-embed
+8.14.0
+embeds ui/dist into the exe
+a single exe with no web server [app/crates/desktop/src/main.rs:3-5]
+ureq + native-tls
+3.5.2 / 0.2.18 (schannel 0.1.30)
+blocking HTTPS to LLM providers
+&quot;the OS TLS stack (SChannel) with the OS certificate store&quot; [app/crates/desktop/src/llm/mod.rs:259-260]
+keyring
+4.2.0 (windows-native-keyring-store 1.1.0)
+Credential Manager key storage
+keys &quot;never reach the web view and are never written to a file by the app&quot; [app/crates/desktop/src/config.rs:2]
+windows-sys
+0.61.2
+MessageBoxW, ShellExecuteW
+&quot;There is no console, so failures must be shown&quot; [app/crates/desktop/src/main.rs:304]
+Leptos (csr)
+0.8.23
+reactive UI compiled to WebAssembly
+not stated
+wasm-bindgen (crate and CLI)
+0.2.130
+JS glue for the wasm UI
+crate and CLI versions must match [app/crates/ui/Cargo.toml:15]
+js-sys / web-sys
+0.3.107
+browser API bindings
+not stated
+console_error_panic_hook
+0.1.7
+wasm panic messages to the console
+not stated
+serde / serde_json (preserve_order)
+1.0.229 / 1.0.154
+JSON for IPC, prompts, content
+Python-compatible JSON helpers exist [app/crates/desktop/src/prompts.rs:105-107]; the reason for preserve_order is not stated
+Fonts: Oswald, Libre Franklin, Source Serif 4 (woff2)
+files in assets/fonts
+typography, served from the exe
+user asked for condensed uppercase headlines (Oswald) [context: user motion feedback]
+Earlier claims checked against today&apos;s code
+Severities are those reported by the earlier exercises; they were not re-rated here. &quot;Unchanged&quot; means the code path the claim describes is still present on 25 Nov.
+Claim
+Source
+Status in today&apos;s code
+Evidence
+WebView navigation lock-down added
+24 Nov review, high, reported fixed
+present: navigation allow-list, new-window deny, drag-drop handler
+[app/crates/desktop/src/main.rs:366-369]
+WebView2 data folder moved to %LOCALAPPDATA%
+24 Nov review, high, reported fixed
+present
+[app/crates/desktop/src/main.rs:316-319, 362] [app/crates/desktop/src/config.rs:40-43]
+Reload keys (F5, Ctrl+R) stay enabled, so run ids restart at 1 after a reload
+25 Nov exercise, medium
+unchanged: no with_browser_accelerator_keys call, wry default true
+[registry wry-0.57.3/src/lib.rs:1770] [app/crates/ui/src/state.rs:220]
+x-goog-api-key and x-api-key headers follow cross-host redirects
+25 Nov exercise, high
+unchanged: agent sets no max_redirects or https_only; ureq-proto strips only Authorization and Cookie on redirect
+[app/crates/desktop/src/llm/mod.rs:261-268] [registry ureq-proto-0.7.1/src/client/redirect.rs:84-90]
+Error text is truncated to 140 characters before the key is scrubbed
+25 Nov exercise, medium
+unchanged order
+[app/crates/desktop/src/llm/mod.rs:287-294, 419-425]
+An explicit provider choice overrides an unambiguous key prefix
+25 Nov exercise, medium
+unchanged; a unit test asserts this behaviour
+[app/crates/desktop/src/main.rs:120-121, 420]
+.env is searched in every ancestor of the current directory
+25 Nov exercise, medium
+unchanged
+[app/crates/desktop/src/config.rs:75-86]
+Concurrent settings writes can revert the chosen provider
+25 Nov exercise, low
+unchanged: no lock, fixed temporary file name
+[app/crates/desktop/src/config.rs:57-66, 230-238]
+No limit on question length
+25 Nov exercise, low
+unchanged: the question is only trimmed; no maxlength found in the UI
+[app/crates/desktop/src/main.rs:254] [disk, 25 Nov: grep]
+Claims about the simulator verifier (NaN and out-of-range probabilities) belong to the simulator fact file. For reference, to_prob has no finiteness check today [app/crates/qcore/src/lib.rs:441-457].
+The 24 Nov low finding (repair feedback text differs slightly from Python for bad-key or unparseable cases) was not checked in this file. The Rust feedback sentence and the Python sentence share the same template [app/crates/desktop/src/pipeline.rs:109-113] [code/workflow.py:184-185]. Parity of the mismatch strings inside it was not checked.
+README versus code
+The README stack table names only Gemini for the LLM layer. The code has 11 presets over three wire formats [app/README.md:16] [app/crates/desktop/src/llm/mod.rs:47-200].
+The README gives the key order as environment variable, Credential Manager, .env file. The code checks Credential Manager first [app/README.md:16] [app/crates/desktop/src/config.rs:128-139].
+The README says &quot;The interface only learns whether a key exists&quot;. The code also sends the last four characters and the key source [app/README.md:41] [app/crates/desktop/src/main.rs:96-97, 108-109].
+The README lists the Home, Tutor and Lab screens. The code also has Atlas and Topic screens [app/README.md:19-23] [app/crates/ui/src/main.rs:75-81].
+The README&apos;s major versions (tao 0.37, wry 0.57, Leptos 0.8, ureq 3, Rust 1.100, edition 2024, gnullvm) agree with the manifests [app/README.md:12-17].
+Unknown / not measured
+Whether the Mica backdrop is visible anywhere, given that .app paints an opaque background and nothing reads data-mica. Not measured visually.
+The exact thread on which wry calls the IPC handler. This file infers the UI thread from a code comment; it was not observed.
+How many of the 461 Cargo.lock packages are compiled for the Windows host and wasm targets. Not computed. Whether tokio (via wasm-bindgen-futures) ends up in any artifact is also unknown.
+Startup time, memory use, number of WebView2 processes and CPU or GPU use during scroll animations. Not measured.
+Behaviour on Windows 10, where the code comment says the page paints the title bar solid. Not tested.
+Where wry stores the WebView2 profile if %LOCALAPPDATA% is unset (data_dir returns None). Not checked.
+Whether the exe carries version information or a custom Explorer icon. No resource step was found and the file was not inspected.
+Behaviour on a second PC, including SmartScreen without code signing and a missing or old WebView2 runtime. Not tested.
+The effect of adding wasm-opt on the 3,900 KiB wasm size. Not measured.
+Whether today&apos;s release exe runs end to end. The latest live run evidence is the 24 Nov dev build.
+Parity of the repair feedback mismatch strings with Python (the 24 Nov low finding). Not checked here.
+Which target produced the third &quot;0 passed&quot; test result line.

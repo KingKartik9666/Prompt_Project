@@ -1,0 +1,312 @@
+{
+ "title": "Quantum Explainer",
+ "subtitle": "A native Windows tutor that checks every quantum number before you read it",
+ "slides": [
+  {
+   "layout": "title",
+   "section": "Opening",
+   "kicker": "SCSE4041 · Team Chica · PE-B65-13",
+   "body": "A native Windows tutor that checks every quantum number before you read it",
+   "caption": "Kartik Negi · Divey Grover · Twinkle Sahu   |   Faculty: Sonal Kukreja   |   25 November 2026",
+   "notes": "Good morning. We are Team Chica. Our project is the AI-based interactive quantum-algorithm learning platform, problem S18. In Milestone 2 we built a Python prototype. Today we show what came next: Quantum Explainer, a native Windows app written in Rust. The circles on the right are how the app draws qubits: this is Grover's search after one iteration, with all the probability on the marked item."
+  },
+  {
+   "layout": "image-right",
+   "section": "Problem",
+   "kicker": "The problem",
+   "title": "Fluent is not the same as correct",
+   "body": "AI assistants explain quantum algorithms clearly, but the numbers in those explanations are never checked.",
+   "bullets": [
+    "A wrong probability, stated confidently, is worse than no answer",
+    "Beginners cannot tell which number is wrong",
+    "Our Milestone 2 prototype fixed this in a notebook; this app makes it a product"
+   ],
+   "image": "figures/08-tutor-empty.png",
+   "caption": "The Tutor's promise: no wrong answer reaches you unflagged.",
+   "notes": "The problem we started with has not changed. Language models are fluent, and that fluency hides mistakes. If an explanation says the Bell state gives 01 with some probability, a beginner will believe it. Our answer in Milestone 2 was a simulator that checks the numbers. The native app keeps that idea and puts it in front of real learners."
+  },
+  {
+   "layout": "statement",
+   "kicker": "Our answer",
+   "title": "Checked, not trusted",
+   "body": "Every final probability the Tutor can check is recomputed by a simulator inside the app before the learner reads it.",
+   "notes": "This is the one idea the whole app is built around. We do not ask the model to be right. We check it. The same simulator that draws the circles on screen recomputes the probabilities the model claims, and the app says plainly whether they match."
+  },
+  {
+   "layout": "image-right",
+   "section": "Product",
+   "kicker": "Product tour",
+   "title": "Every qubit is proven",
+   "body": "A cinematic Home story, written in Rust and drawn by WebView2 in a native window.",
+   "bullets": [
+    "Scroll-driven motion, smoothed by a spring",
+    "No scroll-jacking: the page scrolls normally",
+    "Qubits in circle notation: area = probability"
+   ],
+   "image": "figures/01-home-hero.png",
+   "caption": "Home screen, 25 November 2026 build.",
+   "notes": "This is the Home screen. We took inspiration from Apple launch pages and from landonorris.com, but we checked the research first: scroll-jacking hurts people who are trying to learn. So the motion follows your scroll continuously, smoothed by a spring, and the page never takes control away from you."
+  },
+  {
+   "layout": "pipeline",
+   "kicker": "How a question flows",
+   "title": "Read, explain, check, practise",
+   "body": "The same four prompts we evaluated in Milestone 2, embedded byte for byte.",
+   "steps": [
+    {
+     "title": "Read",
+     "text": "P1 routes the algorithm, level, language and any false belief"
+    },
+    {
+     "title": "Explain",
+     "text": "P2 explains step by step, with the state after every gate"
+    },
+    {
+     "title": "Check",
+     "text": "P3 extracts the claimed probabilities; qcore recomputes them"
+    },
+    {
+     "title": "Practise",
+     "text": "P4 writes one new question with a hint and an answer"
+    }
+   ],
+   "caption": "A mismatch sends the explanation back once with the correct result. If it is still wrong, the learner is told.",
+   "notes": "A question goes through four stages. The router decides which algorithm it is and catches mistaken beliefs, such as Grover giving an exponential speedup. The explainer writes the steps. Then the check: a third prompt pulls out the probabilities and our simulator recomputes them from the router's own parameters, not from what the model echoes. If they disagree, the explanation goes back once with the right answer."
+  },
+  {
+   "layout": "image-left",
+   "kicker": "The Lab",
+   "title": "Push the gates yourself",
+   "body": "Works offline, with no key. Bell, Deutsch–Jozsa or Grover, one gate at a time.",
+   "bullets": [
+    "Radius shows magnitude, the line shows sign",
+    "Negative amplitudes turn coral",
+    "The oracle hides the mark in the phase: every probability is still ¼"
+   ],
+   "image": "figures/07-lab-oracle.png",
+   "caption": "Grover's oracle has flipped the sign of |01⟩.",
+   "notes": "The Lab needs no internet. Here Grover's oracle has just flipped the sign of the marked item. Notice that every probability is still one quarter: the mark is hidden in the phase. One more step, diffusion, and all the probability moves onto the marked item. Learners can step forward and back with the arrow keys."
+  },
+  {
+   "layout": "image-left",
+   "section": "Atlas",
+   "kicker": "The Atlas",
+   "title": "Every idea, connected",
+   "image": "figures/03-atlas-map.png",
+   "body": "A map of quantum computing that grows outward from one dot.",
+   "notes": "The Atlas is where we want learners to keep going after a question. It is a map of quantum computing that grows outward from one dot. Today three pages are written: superposition, entanglement and teleportation. Sections without pages say coming soon. We are honest about that.",
+   "bullets": [
+    "6 sections; 3 topic pages written so far",
+    "Empty sections say \"coming soon\", honestly",
+    "Every circuit claim on every page is checked by a test"
+   ],
+   "caption": "The Atlas map, 25 November 2026 build."
+  },
+  {
+   "layout": "image-right",
+   "kicker": "Topic pages",
+   "title": "Pages that prove their own claims",
+   "body": "Each page mixes prose, circuits, misconceptions, practice and sources.",
+   "bullets": [
+    "Every stated outcome must match the simulator within 0.0005",
+    "Every link must point at a page that exists",
+    "A unit test enforces both"
+   ],
+   "image": "figures/05-topic-scroll-2.png",
+   "caption": "Entanglement page: a circuit labelled as checked by the simulator.",
+   "notes": "Every page is a JSON file, and a unit test runs every circuit in it and compares the result with what the text says, to five ten-thousandths. A wrong claim or a dead link fails the build's tests. One limitation we found ourselves: the gate checks probabilities only, so it cannot see a phase error."
+  },
+  {
+   "layout": "image-right",
+   "section": "Engineering",
+   "kicker": "Choose your AI",
+   "title": "Bring your own key, any provider",
+   "body": "Eleven presets over three wire formats: Gemini, Anthropic and OpenAI-compatible.",
+   "bullets": [
+    "The key is checked with the provider before it is saved",
+    "Stored in Windows Credential Manager, never in a file",
+    "The page only ever sees the last four characters"
+   ],
+   "image": "figures/09-settings.png",
+   "caption": "Settings: provider, key, and a link to the provider's key page.",
+   "notes": "Anyone can use the app with their own key. You pick a provider or paste a key and the app guesses the provider from the prefix when that is unambiguous. It checks the key with the provider first, then stores it in Windows Credential Manager. The interface never sees the key, only its last four characters."
+  },
+  {
+   "layout": "architecture",
+   "kicker": "Architecture",
+   "title": "One process, no open ports",
+   "body": "The interface is embedded in the executable and served over a private app:// protocol. All network calls come from the native host.",
+   "layers": [
+    {
+     "name": "Window",
+     "detail": "tao 0.37: frameless, own title bar, Windows 11 Mica"
+    },
+    {
+     "name": "Web engine",
+     "detail": "wry 0.57 on WebView2 (Chromium 158); navigation locked to the app"
+    },
+    {
+     "name": "Interface",
+     "detail": "Leptos 0.8 compiled to WebAssembly: Home, Atlas, Tutor, Lab"
+    },
+    {
+     "name": "Host",
+     "detail": "P1–P4 pipeline, 11 providers, keys, HTTPS through the OS TLS stack"
+    },
+    {
+     "name": "qcore simulator",
+     "detail": "Statevector simulators and verifier, shared by host and interface"
+    }
+   ],
+   "notes": "Architecturally it is one Windows process. There is no web server and no open port: the interface is compiled into the executable. The key layer is qcore, our simulator crate, which is compiled twice: into the host to verify explanations, and into the interface to animate circuits. So what you see and what judges the model are the same code."
+  },
+  {
+   "layout": "cards",
+   "kicker": "Newest stable tech",
+   "title": "Built on current releases",
+   "cards": [
+    {
+     "title": "Rust 1.100",
+     "text": "Edition 2024 across all three crates, built with LLVM-MinGW",
+     "icon": "FiCpu"
+    },
+    {
+     "title": "WebView2 158",
+     "text": "The Chromium engine built into Windows, inside a native window",
+     "icon": "FiMonitor"
+    },
+    {
+     "title": "Leptos 0.8",
+     "text": "A reactive Rust interface compiled to WebAssembly",
+     "icon": "FiLayers"
+    },
+    {
+     "title": "Modern CSS",
+     "text": "View Transitions, scroll timelines, anchor-positioned popovers, oklch colour",
+     "icon": "FiZap"
+    },
+    {
+     "title": "ureq 3",
+     "text": "HTTPS with the Windows TLS stack and certificate store",
+     "icon": "FiGlobe"
+    },
+    {
+     "title": "keyring 4",
+     "text": "Keys in Windows Credential Manager, per user",
+     "icon": "FiKey"
+    }
+   ],
+   "notes": "We were asked to use the newest stable technology in every category, and we did. A few choices were forced: the PC had no Microsoft C++ build tools, so we used LLVM-MinGW, and tao is held at 0.37 because 0.38 does not build with the current wry. Where a pre-release existed, such as Leptos 0.9, we stayed on the stable version."
+  },
+  {
+   "layout": "stats",
+   "section": "Evidence",
+   "kicker": "Quality evidence",
+   "title": "Measured, not claimed",
+   "body": "All figures from 24–25 November 2026.",
+   "stats": [
+    {
+     "value": "36",
+     "label": "unit tests passing"
+    },
+    {
+     "value": "6.8 MB",
+     "label": "single native executable"
+    },
+    {
+     "value": "16.6 s",
+     "label": "live Bell question, verified"
+    },
+    {
+     "value": "11",
+     "label": "LLM provider presets"
+    }
+   ],
+   "caption": "Tests cover parity with the Python prototype, the Atlas content gate, key handling and every provider's request format.",
+   "notes": "Here is what we can show with evidence. Thirty-six unit tests pass, including tests that prove the simulator and verifier give exactly the same results as our evaluated Python prototype. The release build is one 6.8 megabyte file. A live Bell-state question ran end to end in 16.6 seconds and was verified by the simulator."
+  },
+  {
+   "layout": "cards",
+   "kicker": "Security",
+   "title": "Locked down, and honest about gaps",
+   "cards": [
+    {
+     "title": "Key stays native",
+     "text": "Only the last 4 characters reach the page; errors are scrubbed",
+     "icon": "FiLock"
+    },
+    {
+     "title": "No navigation",
+     "text": "Only app pages load; pop-ups and file drops are blocked",
+     "icon": "FiShield"
+    },
+    {
+     "title": "Text, not HTML",
+     "text": "Model output is never rendered as HTML",
+     "icon": "FiFileText"
+    },
+    {
+     "title": "Open: verifier",
+     "text": "NaN and out-of-range probabilities still pass the check (finding V1)",
+     "icon": "FiAlertTriangle"
+    }
+   ],
+   "notes": "We ran two rounds of security attacks on our own app. The basics hold: keys stay in the native process, the window cannot be navigated away, and model output is never treated as HTML. But we also found real gaps, and the most important is in our core promise: the verifier accepts a claimed probability of NaN. Fixing that is our first priority."
+  },
+  {
+   "layout": "two-column",
+   "kicker": "What changed",
+   "title": "From notebook to native app",
+   "columns": [
+    {
+     "title": "Milestone 2 prototype",
+     "bullets": [
+      "Python notebook in Colab",
+      "Gemini only",
+      "Simulator checks Bell, DJ and Grover",
+      "Evaluated: 12 of 13 automatic checks"
+     ]
+    },
+    {
+     "title": "Quantum Explainer",
+     "bullets": [
+      "One native Windows executable",
+      "11 providers, learner's own key",
+      "Same prompts and verifier, tested for parity",
+      "Adds the Lab, the Atlas and circle notation"
+     ]
+    }
+   ],
+   "notes": "Comparing the two: the prompts and the verifier carried over unchanged, and tests prove it. What is new is everything around them: a native app, any provider, an offline Lab and the Atlas. What we have not yet done is rerun the full 13-question Milestone 2 evaluation on the native app."
+  },
+  {
+   "layout": "image-left",
+   "section": "Next",
+   "kicker": "Limitations and next steps",
+   "title": "What we will do next",
+   "bullets": [
+    "Harden the verifier: finite, in-range, totals checked",
+    "Fix open security findings, starting with redirects",
+    "Write the remaining Atlas pages (3 of 40 today)",
+    "Add interface tests; rerun the 13-question suite",
+    "Decide on Tauri 2; build the companion website later"
+   ],
+   "image": "figures/10-tutor-live-run-24nov.png",
+   "caption": "Live run, 24 November 2026: Bell state verified by the simulator.",
+   "notes": "Our next steps follow directly from the evidence. First, harden the verifier, because the Verified label is only worth something if it cannot be fooled. Then the open security findings, the remaining Atlas pages, interface tests and a proper re-evaluation. The native shell decision, Tauri 2 or our own, is still open."
+  },
+  {
+   "layout": "closing",
+   "kicker": "Thank you",
+   "title": "Ask it anything quantum",
+   "body": "Quantum Explainer: checked, not trusted.",
+   "bullets": [
+    "Kartik Negi (S24CSEU1982), team leader",
+    "Divey Grover (S24CSEU1989)",
+    "Twinkle Sahu (S24CSEU0090)"
+   ],
+   "caption": "Team Chica · PE-B65-13\nFaculty: Sonal Kukreja\ngithub.com/KingKartik9666/Prompt_Project",
+   "notes": "Thank you. We are happy to take questions, and to run the app live if there is time."
+  }
+ ]
+}

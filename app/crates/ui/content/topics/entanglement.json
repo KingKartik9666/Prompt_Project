@@ -1,0 +1,85 @@
+{
+  "id": "entanglement",
+  "section": "many-qubits",
+  "title": "Entanglement",
+  "kicker": "Two qubits with one shared state that neither has on its own.",
+  "summary": "Some two-qubit states cannot be split into a state for each qubit. In these entangled states the measurement results are correlated more strongly than any pre-arranged classical plan allows. Entanglement is a resource: teleportation, superdense coding and many algorithms consume it.",
+  "level": "beginner",
+  "prereqs": ["superposition"],
+  "next": ["teleportation"],
+  "related": [],
+  "keywords": ["Bell state", "EPR pair", "CNOT", "product state", "correlation", "no-signalling"],
+  "blocks": [
+    {
+      "type": "text",
+      "heading": "A state for the pair, not for each qubit",
+      "body": "Two independent qubits in states a|0⟩ + b|1⟩ and c|0⟩ + d|1⟩ together have the *product state* ac|00⟩ + ad|01⟩ + bc|10⟩ + bd|11⟩.\n\nNow take (|00⟩ + |11⟩)/√2. To write it as a product you would need ad = 0 and bc = 0, while ac and bd are both non-zero. That is impossible, so this state cannot be described qubit by qubit. It is *entangled*."
+    },
+    {
+      "type": "circuit",
+      "title": "Making a Bell state",
+      "caption": "Hadamard on qubit 0, then CNOT from qubit 0 to qubit 1, gives (|00⟩ + |11⟩)/√2. Only 00 and 11 are ever measured.",
+      "circuit": {
+        "qubits": 2,
+        "ops": [
+          { "g": "H", "t": [0], "note": "Qubit 0 into superposition: (|00⟩ + |10⟩)/√2." },
+          { "g": "CX", "c": [0], "t": [1], "note": "CNOT copies qubit 0's value into qubit 1 in each branch: (|00⟩ + |11⟩)/√2." }
+        ]
+      },
+      "expect": { "probs": { "00": 0.5, "11": 0.5 } }
+    },
+    {
+      "type": "text",
+      "heading": "Perfect correlation, random results",
+      "body": "Measure either qubit of (|00⟩ + |11⟩)/√2 and you get 0 or 1 with probability ½ each. Measure the other one afterwards and it always matches.\n\nThe four *Bell states* are the standard basis of maximally entangled two-qubit states. (A gate applied to just one qubit of a Bell state gives another maximally entangled state, so there are infinitely many.) Starting the same circuit from |01⟩, |10⟩ or |11⟩ produces the other three."
+    },
+    {
+      "type": "circuit",
+      "title": "Another Bell state",
+      "caption": "Start from |01⟩ and run the same circuit: (|01⟩ + |10⟩)/√2. Now the two results always disagree.",
+      "circuit": {
+        "qubits": 2,
+        "init": "01",
+        "ops": [
+          { "g": "H", "t": [0], "note": "(|01⟩ + |11⟩)/√2." },
+          { "g": "CX", "c": [0], "t": [1], "note": "Flip qubit 1 where qubit 0 is 1: (|01⟩ + |10⟩)/√2." }
+        ]
+      },
+      "expect": { "probs": { "01": 0.5, "10": 0.5 } }
+    },
+    {
+      "type": "circuit",
+      "title": "One qubit alone looks like noise",
+      "caption": "Looking only at qubit 1 of the Bell state, the outcomes are 50/50, whatever is done to qubit 0. This is why entanglement cannot send a message.",
+      "circuit": {
+        "qubits": 2,
+        "ops": [
+          { "g": "H", "t": [0] },
+          { "g": "CX", "c": [0], "t": [1] },
+          { "g": "Z", "t": [0], "note": "Even a gate on qubit 0 leaves qubit 1's own statistics unchanged." }
+        ]
+      },
+      "expect": { "qubits": [1], "probs": { "0": 0.5, "1": 0.5 } }
+    },
+    {
+      "type": "misconception",
+      "myth": "Measuring one entangled qubit sends a signal to the other, faster than light.",
+      "truth": "The other side's results are 50/50 whatever the first side does. The correlation only appears when the two lists of results are compared, which needs ordinary communication. No information travels through entanglement alone (the no-signalling principle)."
+    },
+    {
+      "type": "misconception",
+      "myth": "Entanglement is just shared hidden instructions, like two sealed envelopes.",
+      "truth": "Bell's theorem shows that no such local plan can reproduce all the correlations entangled qubits give when measured in different bases. Experiments have confirmed the quantum predictions."
+    },
+    {
+      "type": "practice",
+      "question": "In the state (|00⟩ + |11⟩)/√2 you measure qubit 0 and get 1. What will qubit 1 give, and with what probability?",
+      "hint": "Which terms of the state are left once qubit 0 is known to be 1?",
+      "answer": "Only |11⟩ is consistent with qubit 0 being 1, so the state becomes |11⟩ and qubit 1 gives 1 with probability 1."
+    }
+  ],
+  "sources": [
+    { "title": "M. A. Nielsen and I. L. Chuang, Quantum Computation and Quantum Information (10th anniversary ed., Cambridge University Press, 2010), ch. 1–2" },
+    { "title": "J. S. Bell, \"On the Einstein Podolsky Rosen paradox\", Physics 1, 195 (1964)" }
+  ]
+}

@@ -1,0 +1,5 @@
+target/
+.tools/
+crates/ui/dist/
+.taste-skill/
+.env

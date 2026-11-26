@@ -1,0 +1,81 @@
+{
+  "id": "teleportation",
+  "section": "protocols",
+  "title": "Quantum teleportation",
+  "kicker": "Move an unknown qubit state using one Bell pair and two classical bits.",
+  "summary": "Alice can transfer an unknown qubit state to Bob without sending the qubit. She uses a shared Bell pair and sends Bob two ordinary bits. Her copy is destroyed in the process, and nothing travels faster than light.",
+  "level": "intermediate",
+  "prereqs": ["entanglement", "superposition"],
+  "next": [],
+  "related": [],
+  "keywords": ["Bell measurement", "classical communication", "deferred measurement", "EPR", "no-cloning"],
+  "blocks": [
+    {
+      "type": "text",
+      "heading": "The setup",
+      "body": "Alice holds a qubit in an unknown state |ψ⟩ = α|0⟩ + β|1⟩ (qubit 0). She cannot measure it to learn α and β: a measurement gives one bit and destroys the rest.\n\nAlice and Bob share a Bell pair (|00⟩ + |11⟩)/√2. Alice holds qubit 1 and Bob holds qubit 2."
+    },
+    {
+      "type": "text",
+      "heading": "The protocol",
+      "body": "1. Alice applies CNOT from qubit 0 to qubit 1, then a Hadamard on qubit 0.\n\n2. She measures qubits 0 and 1, gets two bits m0 and m1, and sends them to Bob over an ordinary channel.\n\n3. Bob applies X to his qubit if m1 = 1, then Z if m0 = 1. His qubit is now exactly |ψ⟩."
+    },
+    {
+      "type": "circuit",
+      "title": "Teleporting a state with P(0) = ¾",
+      "caption": "Qubit 0 is prepared with RY(π/3), so P(0) = ¾. The measurements and Bob's corrections are written as controlled gates (the deferred-measurement principle gives the same statistics). Bob's qubit ends with P(0) = ¾ and P(1) = ¼.",
+      "circuit": {
+        "qubits": 3,
+        "ops": [
+          { "g": "RY", "t": [0], "theta": "pi/3", "note": "Prepare the state to send: cos(π/6)|0⟩ + sin(π/6)|1⟩ on qubit 0." },
+          { "g": "H", "t": [1], "note": "Start the shared Bell pair." },
+          { "g": "CX", "c": [1], "t": [2], "note": "Qubits 1 and 2 are now (|00⟩ + |11⟩)/√2." },
+          { "g": "CX", "c": [0], "t": [1], "note": "Alice: CNOT from her state onto her half of the pair." },
+          { "g": "H", "t": [0], "note": "Alice: Hadamard on qubit 0. Measuring qubits 0 and 1 now gives Bob's two correction bits." },
+          { "g": "CX", "c": [1], "t": [2], "note": "Bob: X if m1 = 1." },
+          { "g": "CZ", "c": [0], "t": [2], "note": "Bob: Z if m0 = 1. His qubit is now the original state." }
+        ]
+      },
+      "expect": { "qubits": [2], "probs": { "0": 0.75, "1": 0.25 } }
+    },
+    {
+      "type": "circuit",
+      "title": "Teleporting |1⟩",
+      "caption": "With qubit 0 starting in |1⟩, Bob's qubit ends in |1⟩ every time.",
+      "circuit": {
+        "qubits": 3,
+        "init": "100",
+        "ops": [
+          { "g": "H", "t": [1] },
+          { "g": "CX", "c": [1], "t": [2] },
+          { "g": "CX", "c": [0], "t": [1] },
+          { "g": "H", "t": [0] },
+          { "g": "CX", "c": [1], "t": [2] },
+          { "g": "CZ", "c": [0], "t": [2] }
+        ]
+      },
+      "expect": { "qubits": [2], "probs": { "1": 1.0 } }
+    },
+    {
+      "type": "misconception",
+      "myth": "Teleportation sends the qubit instantly, faster than light.",
+      "truth": "Until Bob receives Alice's two bits, his qubit is in a 50/50 mixture that carries no information about |ψ⟩. Those bits travel no faster than light, so neither does the state."
+    },
+    {
+      "type": "misconception",
+      "myth": "Teleportation makes a copy of the state.",
+      "truth": "Alice's measurement leaves her qubits in a basis state, so the original is gone. Only one copy exists at the end, as the no-cloning theorem requires."
+    },
+    {
+      "type": "practice",
+      "question": "Alice measures m0 = 1 and m1 = 0. Which correction does Bob apply?",
+      "hint": "X depends on m1 and Z on m0.",
+      "answer": "Only Z, because m0 = 1 and m1 = 0."
+    }
+  ],
+  "sources": [
+    { "title": "C. H. Bennett et al., \"Teleporting an unknown quantum state via dual classical and Einstein-Podolsky-Rosen channels\", Physical Review Letters 70, 1895 (1993)" },
+    { "title": "D. Bouwmeester et al., \"Experimental quantum teleportation\", Nature 390, 575 (1997)" },
+    { "title": "M. A. Nielsen and I. L. Chuang, Quantum Computation and Quantum Information (10th anniversary ed., Cambridge University Press, 2010), ch. 1" }
+  ]
+}

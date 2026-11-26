@@ -1,0 +1,75 @@
+{
+  "id": "superposition",
+  "section": "foundations",
+  "title": "Superposition",
+  "kicker": "A qubit is not secretly 0 or 1. It carries two amplitudes at once.",
+  "summary": "A qubit's state is a weighted combination of |0⟩ and |1⟩. The weights are amplitudes: complex numbers whose squared sizes give the chances of measuring 0 or 1. Superposition is what lets amplitudes add up or cancel, which is where every quantum speedup starts.",
+  "level": "beginner",
+  "prereqs": [],
+  "next": ["entanglement"],
+  "related": ["teleportation"],
+  "keywords": ["amplitude", "qubit state", "Born rule", "Hadamard", "interference", "ket"],
+  "blocks": [
+    {
+      "type": "text",
+      "heading": "Two amplitudes, not two values",
+      "body": "A classical bit is either 0 or 1. A qubit's state is written |ψ⟩ = α|0⟩ + β|1⟩, where α and β are complex numbers called *amplitudes*.\n\nWhen you measure the qubit you get 0 with probability |α|² and 1 with probability |β|². Because one of the two must happen, the amplitudes always satisfy |α|² + |β|² = 1."
+    },
+    {
+      "type": "math",
+      "expr": "|ψ⟩ = α|0⟩ + β|1⟩,   |α|² + |β|² = 1",
+      "caption": "Any single-qubit state. Measuring gives 0 with probability |α|² and 1 with probability |β|²."
+    },
+    {
+      "type": "circuit",
+      "title": "An equal superposition",
+      "caption": "The Hadamard gate takes |0⟩ to (|0⟩ + |1⟩)/√2: each outcome now has amplitude 1/√2, so probability ½.",
+      "circuit": { "qubits": 1, "ops": [ { "g": "H", "t": [0], "note": "Hadamard: |0⟩ becomes (|0⟩ + |1⟩)/√2." } ] },
+      "expect": { "probs": { "0": 0.5, "1": 0.5 } }
+    },
+    {
+      "type": "text",
+      "heading": "Why it is not just a coin flip",
+      "body": "A 50/50 superposition and a fair coin give the same statistics if you measure straight away. The difference shows up when you act on the qubit first.\n\nApply a second Hadamard. The two paths that lead to |1⟩ have amplitudes +½ and −½ and cancel; the two paths to |0⟩ add to 1. The qubit returns to |0⟩ with certainty. A randomly set coin cannot do that. This cancelling and reinforcing is *interference*."
+    },
+    {
+      "type": "circuit",
+      "title": "Interference: H twice",
+      "caption": "The amplitudes for |1⟩ cancel and those for |0⟩ add, so the second Hadamard undoes the first.",
+      "circuit": {
+        "qubits": 1,
+        "ops": [
+          { "g": "H", "t": [0], "note": "Equal superposition (|0⟩ + |1⟩)/√2." },
+          { "g": "H", "t": [0], "note": "The |1⟩ amplitudes cancel; the qubit is back to |0⟩." }
+        ]
+      },
+      "expect": { "probs": { "0": 1.0 } }
+    },
+    {
+      "type": "circuit",
+      "title": "An unequal superposition",
+      "caption": "A rotation RY(π/3) gives amplitudes cos(π/6) ≈ 0.866 and sin(π/6) = 0.5, so probabilities ¾ and ¼.",
+      "circuit": { "qubits": 1, "ops": [ { "g": "RY", "t": [0], "theta": "pi/3", "note": "Rotate by π/3 about the Y axis." } ] },
+      "expect": { "probs": { "0": 0.75, "1": 0.25 } }
+    },
+    {
+      "type": "misconception",
+      "myth": "A qubit in superposition is really 0 or 1; we just don't know which yet.",
+      "truth": "If that were true, applying H twice could not return |0⟩ every time. A hidden 0 or 1 would come out of two Hadamards as 0 or 1 with equal odds. The exact return to |0⟩ is interference between amplitudes, which a hidden definite value cannot produce."
+    },
+    {
+      "type": "misconception",
+      "myth": "Superposition means a quantum computer tries every answer at once and reads them all out.",
+      "truth": "A measurement returns one outcome. An algorithm must arrange interference so that wrong answers cancel and right ones reinforce before measuring. Superposition alone gives no speedup."
+    },
+    {
+      "type": "practice",
+      "question": "The qubit starts in |1⟩ and you apply a Hadamard. What are the probabilities of measuring 0 and 1, and how does the state differ from H|0⟩?",
+      "hint": "H|1⟩ = (|0⟩ − |1⟩)/√2.",
+      "answer": "Both probabilities are ½, exactly as for H|0⟩. The difference is the sign of the |1⟩ amplitude, a phase of π. It does not change these probabilities, but it changes what happens after further gates: H(H|1⟩) returns |1⟩, not |0⟩."
+    }
+  ],
+  "sources": [
+    { "title": "M. A. Nielsen and I. L. Chuang, Quantum Computation and Quantum Information (10th anniversary ed., Cambridge University Press, 2010), ch. 1" }
+  ]
+}
